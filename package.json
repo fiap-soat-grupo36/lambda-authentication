@@ -1,0 +1,15 @@
+{
+  "name": "lambda-authentication",
+  "version": "1.0.0",
+  "description": "AWS Lambda function for microservice authentication using JWT tokens",
+  "main": "index.js",
+  "scripts": {
+    "test": "node test/test.js"
+  },
+  "keywords": ["aws", "lambda", "authentication", "jwt"],
+  "author": "FIAP SOAT Grupo 36",
+  "license": "ISC",
+  "dependencies": {
+    "jsonwebtoken": "^9.0.2"
+  }
+}
