@@ -46,7 +46,7 @@ jobs:
 
   create_pr:
     uses: ./.github/workflows/_reusable-create-pr.yml
-    needs: [ci-terraform, sonarqube]
+    needs: [ci-terraform, build-python]
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/feature/')
     with:
       base_branch: "develop"
