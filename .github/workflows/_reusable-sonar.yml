@@ -67,30 +67,49 @@ jobs:
       - name: Install SonarScanner CLI
         run: |
           set -euo pipefail
+          # requested scanner version (may be overridden by caller)
           SCANNER_VERSION=${{ inputs.scanner_version }}
-          ZIP=sonar-scanner-cli-${SCANNER_VERSION}.zip
-          URL="https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/${ZIP}"
-          echo "Downloading SonarScanner from ${URL}"
+          # fallback default (matches inputs/default in this workflow)
+          DEFAULT_SCANNER_VERSION="4.8.0.2856"
 
-          # Prefer curl if available; fall back to wget. Use retries and fail loudly with HTTP status.
-          if command -v curl >/dev/null 2>&1; then
-            echo "Using curl to download"
-            # -f: fail on HTTP errors, -S: show error, -L: follow redirects, --retry: retry on transient errors
-            curl -fSL --retry 5 --retry-delay 2 -o "$ZIP" "$URL" || {
-              echo "curl failed to download ${URL}" >&2
-              ls -la || true
-              exit 1
-            }
+          try_download() {
+            local ver="$1"
+            ZIP=sonar-scanner-cli-${ver}.zip
+            URL="https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/${ZIP}"
+            echo "Attempting download for version ${ver} from ${URL}"
+
+            if command -v curl >/dev/null 2>&1; then
+              echo "Using curl to download"
+              curl -fSL --retry 3 --retry-delay 2 -o "$ZIP" "$URL" && return 0 || return $?
+            else
+              echo "curl not found, falling back to wget"
+              wget --server-response --tries=3 --retry-connrefused -O "$ZIP" "$URL" && return 0 || return $?
+            fi
+          }
+
+          # First attempt requested version
+          if try_download "$SCANNER_VERSION"; then
+            CHOSEN_VERSION="$SCANNER_VERSION"
           else
-            echo "curl not found, falling back to wget"
-            # --server-response helps show HTTP error code in wget output
-            wget --server-response --tries=5 --retry-connrefused -O "$ZIP" "$URL" || {
-              echo "wget failed to download ${URL}" >&2
+            echo "Failed to download requested SonarScanner version: $SCANNER_VERSION"
+            # If it was explicitly set to the same as default, fail now
+            if [ "$SCANNER_VERSION" = "$DEFAULT_SCANNER_VERSION" ]; then
+              echo "Tried default version $DEFAULT_SCANNER_VERSION and failed; aborting." >&2
               ls -la || true
               exit 1
-            }
+            fi
+
+            echo "Falling back to default SonarScanner version: $DEFAULT_SCANNER_VERSION"
+            if try_download "$DEFAULT_SCANNER_VERSION"; then
+              CHOSEN_VERSION="$DEFAULT_SCANNER_VERSION"
+            else
+              echo "Failed to download fallback SonarScanner version: $DEFAULT_SCANNER_VERSION" >&2
+              ls -la || true
+              exit 1
+            fi
           fi
 
+          ZIP=sonar-scanner-cli-${CHOSEN_VERSION}.zip
           echo "Unzipping $ZIP"
           unzip -q "$ZIP"
           SCANNER_DIR=$(ls -d sonar-scanner-*/ | head -n 1)
@@ -99,7 +118,7 @@ jobs:
             ls -la || true
             exit 1
           fi
-          echo "Adding $SCANNER_DIR/bin to PATH"
+          echo "Adding $SCANNER_DIR/bin to PATH (scanner version: ${CHOSEN_VERSION})"
           echo "$PWD/$SCANNER_DIR/bin" >> $GITHUB_PATH
 
       - name: Run Sonar Scanner
