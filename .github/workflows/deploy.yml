@@ -59,17 +59,21 @@ jobs:
     - name: SonarQube Scan
       uses: SonarSource/sonarqube-scan-action@v6.0.0 # Ex: v4.1.0 or sha1, See the latest version at https://github.com/marketplace/actions/official-sonarqube-scan
       with:
-        # Use the repository's `app` folder as the Sonar project base and
-        # point sonar.sources/tests to the actual directories in this repo.
+        # The scanner runs with project base = `app` (working-directory used in other jobs),
+        # so source/test paths must be given relative to that directory. The repository
+        # puts `src` and `tests` at the repo root, so reference them via ../
         projectBaseDir: app
         args: >
             -Dsonar.organization='fiap-soat-grupo36'
             "-Dsonar.projectName=Lambda Authentication"
             -Dsonar.projectKey='fiap-soat-grupo36_lambda-authentication'
+            # coverage.xml is generated under app/coverage.xml (tests run from app/),
+            # so keep the path relative to projectBaseDir (app)
             -Dsonar.python.coverage.reportPaths=coverage.xml
-            -Dsonar.sources=src
-            -Dsonar.tests=tests
-            -Dsonar.test.exclusions=tests/**
+            # src and tests live at the repository root, so relative to `app` they are ../src and ../tests
+            -Dsonar.sources=../src
+            -Dsonar.tests=../tests
+            -Dsonar.test.exclusions=../tests/**
             -Dsonar.verbose=true
 
       env:
