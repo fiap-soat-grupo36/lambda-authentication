@@ -99,6 +99,7 @@ jobs:
   ci-terraform:
     runs-on: ubuntu-latest
     name: "Terraform validation and plan"
+    needs: [upload-package]
     defaults:
       run:
         working-directory: './infra/'

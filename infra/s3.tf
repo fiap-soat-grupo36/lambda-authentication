@@ -1,7 +1,11 @@
 resource "aws_s3_bucket" "lambda_code" {
   bucket_prefix = "fiap-lambda-code-"
-  acl           = "private"
   force_destroy = true
+}
+
+resource "aws_s3_bucket_acl" "lambda_code_acl" {
+  bucket = aws_s3_bucket.lambda_code.id
+  acl    = "private"
 }
 
 resource "aws_s3_bucket_public_access_block" "block" {

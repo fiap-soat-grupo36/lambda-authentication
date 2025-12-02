@@ -1,5 +1,5 @@
 import pytest
-from handler import lambda_handler
+from app.handler import lambda_handler
 
 EXPECTED_MSG = "Hello from fiap-auth-lambda (Python 3.12)!"
 
