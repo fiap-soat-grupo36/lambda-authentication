@@ -2,10 +2,10 @@ name: _reusable-sonar
 on:
   workflow_call:
     inputs:
-      java_version:
+      python_version:
         required: false
         type: string
-        default: '21'
+        default: '3.11'
       sonar_host:
         required: false
         type: string
@@ -19,11 +19,15 @@ on:
       scanner_version:
         required: false
         type: string
-        default: '4.0.0.4121'
-      maven_args:
+        default: '4.8.0.2856'
+      project_dir:
         required: false
         type: string
-        default: ''
+        default: '.'
+      requirements_file:
+        required: false
+        type: string
+        default: 'requirements.txt'
     secrets:
       SONAR_TOKEN:
         required: false
@@ -31,28 +35,101 @@ on:
 jobs:
   sonar:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ inputs.project_dir }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Set up JDK
-        uses: actions/setup-java@v4
+      - name: Set up Python
+        uses: actions/setup-python@v4
         with:
-          java-version: ${{ inputs.java_version }}
-          distribution: temurin
-          cache: maven
+          python-version: ${{ inputs.python_version }}
 
-      - name: Build project
-        run: mvn --batch-mode clean compile test-compile ${{ inputs.maven_args }}
+      - name: Install project dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f "${{ inputs.requirements_file }}" ]; then
+            pip install -r "${{ inputs.requirements_file }}"
+          fi
+          # install test and coverage tooling
+          pip install pytest pytest-cov
 
-      - name: Run tests and SonarCloud Scan
+      - name: Run tests and generate coverage report
+        env:
+          PYTHONPATH: ${{ github.workspace }}
+        run: |
+          # run pytest and produce coverage.xml for Sonar
+          pytest --cov=. --cov-report=xml
+
+      - name: Install SonarScanner CLI
+        run: |
+          set -euo pipefail
+          # requested scanner version (may be overridden by caller)
+          SCANNER_VERSION=${{ inputs.scanner_version }}
+          # fallback default (matches inputs/default in this workflow)
+          DEFAULT_SCANNER_VERSION="4.8.0.2856"
+
+          try_download() {
+            local ver="$1"
+            ZIP=sonar-scanner-cli-${ver}.zip
+            URL="https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/${ZIP}"
+            echo "Attempting download for version ${ver} from ${URL}"
+
+            if command -v curl >/dev/null 2>&1; then
+              echo "Using curl to download"
+              curl -fSL --retry 3 --retry-delay 2 -o "$ZIP" "$URL" && return 0 || return $?
+            else
+              echo "curl not found, falling back to wget"
+              wget --server-response --tries=3 --retry-connrefused -O "$ZIP" "$URL" && return 0 || return $?
+            fi
+          }
+
+          # First attempt requested version
+          if try_download "$SCANNER_VERSION"; then
+            CHOSEN_VERSION="$SCANNER_VERSION"
+          else
+            echo "Failed to download requested SonarScanner version: $SCANNER_VERSION"
+            # If it was explicitly set to the same as default, fail now
+            if [ "$SCANNER_VERSION" = "$DEFAULT_SCANNER_VERSION" ]; then
+              echo "Tried default version $DEFAULT_SCANNER_VERSION and failed; aborting." >&2
+              ls -la || true
+              exit 1
+            fi
+
+            echo "Falling back to default SonarScanner version: $DEFAULT_SCANNER_VERSION"
+            if try_download "$DEFAULT_SCANNER_VERSION"; then
+              CHOSEN_VERSION="$DEFAULT_SCANNER_VERSION"
+            else
+              echo "Failed to download fallback SonarScanner version: $DEFAULT_SCANNER_VERSION" >&2
+              ls -la || true
+              exit 1
+            fi
+          fi
+
+          ZIP=sonar-scanner-cli-${CHOSEN_VERSION}.zip
+          echo "Unzipping $ZIP"
+          unzip -q "$ZIP"
+          SCANNER_DIR=$(ls -d sonar-scanner-*/ | head -n 1)
+          if [ -z "${SCANNER_DIR:-}" ]; then
+            echo "Could not find sonar-scanner directory after unzipping $ZIP" >&2
+            ls -la || true
+            exit 1
+          fi
+          echo "Adding $SCANNER_DIR/bin to PATH (scanner version: ${CHOSEN_VERSION})"
+          echo "$PWD/$SCANNER_DIR/bin" >> $GITHUB_PATH
+
+      - name: Run Sonar Scanner
         env:
           GITHUB_TOKEN: ${{ github.token }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
-          mvn --batch-mode verify sonar:sonar \
+          sonar-scanner \
             -Dsonar.host.url="${{ inputs.sonar_host }}" \
             -Dsonar.organization="${{ inputs.sonar_org }}" \
             -Dsonar.projectKey="${{ inputs.sonar_project_key }}" \
-            ${{ inputs.maven_args }}
+            -Dsonar.sources=. \
+            -Dsonar.python.coverage.reportPaths=coverage.xml \
+            -Dsonar.login="${{ secrets.SONAR_TOKEN }}"
