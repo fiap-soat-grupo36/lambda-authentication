@@ -15,41 +15,15 @@ permissions:
 
 jobs:
   build-python:
-    name: "CI - Python 3.12"
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: './app/'
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-
-      - name: Install dependencies
-        run: |
-            python -m pip install --upgrade pip
-            pip install -r requirements.txt || true
-            pip install pytest pytest-cov flake8
-
-      - name: Lint with Flake8
-        run: |
-            flake8 . || true
-
-      - name: Run tests
-        run: |
-          # ensure the repository root is on PYTHONPATH so `import app.handler` works
-          PYTHONPATH=.. pytest -q ./tests --cov=./ --cov-report=xml:coverage.xml --cov-report=html
-
-      - name: Upload coverage artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-report
-          path: |
-            app/coverage.xml
-            app/htmlcov
-
-            
+    uses: ./.github/workflows/_reusable-build-python.yml
+    with:
+      python_version: '3.12'
+      project_dir: './app/'
+      requirements_file: 'requirements.txt'
+      
   sonarqube:
     uses: ./.github/workflows/_reusable-sonar.yml
+    needs: [build-python]
     with:
       python_version: '3.12'
       sonar_org: 'fiap-soat-grupo36'
@@ -62,267 +36,64 @@ jobs:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
   upload-package:
-    name: "Upload Lambda Package"
-    runs-on: ubuntu-latest
+    uses: ./.github/workflows/_reusable-upload-package.yml
     needs: [build-python, sonarqube]
     if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-
-      - name: Make package script executable
-        run: |
-          chmod +x ./scripts/package_lambda.sh
-
-      - name: Build lambda zip
-        run: |
-          ./scripts/package_lambda.sh
-
-      - name: Upload Lambda Package as Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: lambda-package
-          path: app/lambda.zip
+    with:
+      project_root: './'
+      package_script: './scripts/package_lambda.sh'
+      artifact_path: 'app/lambda.zip'
 
   ci-terraform:
-    name: "CI - Terraform validate & plan"
-    runs-on: ubuntu-latest
+    uses: ./.github/workflows/_reusable-ci-terraform.yml
     needs: [build-python]
-    defaults:
-      run:
-        working-directory: './infra/'
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-
-      - name: Ensure lambda zip exists (placeholder for first-deploy)
-        # this step runs from the repository root so terraform's ../app/lambda.zip resolves
-        working-directory: ./
-        run: |
-          python - <<'PY'
-          import os, zipfile
-          p=os.path.join(os.getcwd(),'app','lambda.zip')
-          if not os.path.exists(p):
-            os.makedirs(os.path.dirname(p), exist_ok=True)
-            z=zipfile.ZipFile(p,'w')
-            z.writestr('__placeholder__.txt','placeholder')
-            z.close()
-          print('lambda zip ready:', p)
-          PY
-
-      - name: Set up Terraform CLI
-        uses: hashicorp/setup-terraform@v3.1.2
-        with:
-          terraform_wrapper: false
-
-      - name: Terraform Init
-        id: init
-        run: |
-          terraform init -no-color
-
-      - name: Terraform Validate
-        id: validate
-        run: |
-          terraform validate -no-color || true
-
-      - name: Terraform plan
-        id: plan
-        if: github.event_name == 'pull_request'
-        run: |
-          terraform plan -no-color -input=false
-        continue-on-error: true
-
-      - uses: actions/github-script@v6
-        name: Comment PR with plan details
-        if: github.event_name == 'pull_request'
-        env:
-          PLAN: "terraform\n${{ steps.plan.outputs.stdout }}"
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const output = `#### Terraform Initialization ⚙️\`${{ steps.init.outcome }}\`
-            #### Terraform Validation 🤖\`${{ steps.validate.outcome }}\`
-            #### Terraform Plan 📖\`${{ steps.plan.outcome }}\`
-
-            *Pushed by: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
-
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: output
-            })
-
-      - name: Terraform Plan Status
-        if: steps.plan.outcome == 'failure'
-        run: exit 1
+    with:
+      infra_dir: './infra/'
+    secrets:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   create_pr:
-    name: "Create PR to develop for feature branches"
-    runs-on: ubuntu-latest
+    uses: ./.github/workflows/_reusable-create-pr.yml
     needs: [build-python]
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/feature/')
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-
-      - name: Create Pull Request to develop
-        uses: actions/github-script@v6
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const branch = context.ref.replace('refs/heads/', '');
-            const owner = context.repo.owner;
-            const repo = context.repo.repo;
-
-            // Check if an open PR from this branch to develop already exists
-            const { data: prs } = await github.rest.pulls.list({
-              owner,
-              repo,
-              state: 'open',
-              head: `${owner}:${branch}`,
-              base: 'develop'
-            });
-
-            if (prs.length > 0) {
-              console.log(`PR already exists: ${prs[0].html_url}`);
-              return;
-            }
-
-            const title = `Merge ${branch} into develop`;
-            const body = `Automated PR created after successful CI on branch ${branch}.`;
-
-            const pr = await github.rest.pulls.create({
-              owner,
-              repo,
-              head: branch,
-              base: 'develop',
-              title,
-              body,
-              draft: false
-            });
-
-            console.log(`Created PR ${pr.data.html_url}`);
+    with:
+      base_branch: 'develop'
+      title: ''
+      body: ''
+    secrets:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   create_pr_develop_main:
-    name: "Create PR from develop to main"
-    runs-on: ubuntu-latest
+    uses: ./.github/workflows/_reusable-create-pr.yml
     needs: [ci-terraform, sonarqube]
     if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-
-      - name: Create PR develop -> main
-        uses: actions/github-script@v6
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const branch = 'develop';
-            const owner = context.repo.owner;
-            const repo = context.repo.repo;
-
-            // Check if an open PR from develop to main already exists
-            const { data: prs } = await github.rest.pulls.list({
-              owner,
-              repo,
-              state: 'open',
-              head: `${owner}:${branch}`,
-              base: 'main'
-            });
-
-            if (prs.length > 0) {
-              console.log(`PR already exists: ${prs[0].html_url}`);
-              return;
-            }
-
-            const title = `Merge develop into main`;
-            const body = `Automated PR created after successful CI on branch develop.`;
-
-            const pr = await github.rest.pulls.create({
-              owner,
-              repo,
-              head: branch,
-              base: 'main',
-              title,
-              body,
-              draft: false
-            });
-
-            console.log(`Created PR ${pr.data.html_url}`);
+    with:
+      base_branch: 'main'
+      title: ''
+      body: ''
+    secrets:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   deploy-terraform:
+    uses: ./.github/workflows/_reusable-deploy-terraform.yml
     if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-    name: "Create lambda"
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: './infra/'
     needs: [ci-terraform, upload-package]
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v5.0.0
-        with:
-          aws-access-key-id: '${{ secrets.AWS_ACCESS_KEY_ID }}'
-          aws-secret-access-key: '${{ secrets.AWS_SECRET_ACCESS_KEY }}'
-          aws-region: us-east-1
-
-      - name: Set up Terraform CLI
-        uses: hashicorp/setup-terraform@v3.1.2
-        with:
-          terraform_wrapper: false
-
-      - name: Terraform Init
-        id: init
-        run: |
-          terraform init
-
-      - name: Terraform Apply
-        id: apply
-        run: |
-          terraform apply -auto-approve -input=false
+    with:
+      infra_dir: './infra/'
+      aws_region: 'us-east-1'
+    secrets:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
     
   deploy-lambda:
+    uses: ./.github/workflows/_reusable-deploy-lambda.yml
     if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-    name: "Deploy Lambda Function"
-    runs-on: ubuntu-latest
     needs: [deploy-terraform, upload-package]
-    defaults:
-      run:
-        working-directory: './'
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-
-      - name: Download lambda package artifact
-        uses: actions/download-artifact@v3
-        with:
-          name: lambda-package
-          path: ./artifacts
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v5.0.0
-        with:
-          aws-access-key-id: '${{ secrets.AWS_ACCESS_KEY_ID }}'
-          aws-secret-access-key: '${{ secrets.AWS_SECRET_ACCESS_KEY }}'
-          aws-region: us-east-1
-
-      - name: Install AWS CLI
-        run: |
-          python -m pip install --upgrade pip
-          pip install awscli
-
-      - name: Update Lambda function code
-        env:
-          LAMBDA_FUNCTION_NAME: "fiap-auth-lambda" 
-        run: |
-          if [ -z "${LAMBDA_FUNCTION_NAME}" ]; then
-            echo "Missing secret LAMBDA_FUNCTION_NAME" && exit 1
-          fi
-          ARTIFACT=$(ls ./artifacts | head -n1)
-          echo "Using artifact: $ARTIFACT"
-          aws lambda update-function-code --function-name "${LAMBDA_FUNCTION_NAME}" --zip-file fileb://./artifacts/${ARTIFACT}
+    with:
+      project_root: './'
+      aws_region: 'us-east-1'
+      lambda_function_name: 'fiap-auth-lambda'
+    secrets:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 

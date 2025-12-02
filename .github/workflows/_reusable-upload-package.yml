@@ -1,0 +1,43 @@
+name: _reusable-upload-package
+
+on:
+  workflow_call:
+    inputs:
+      project_root:
+        required: false
+        type: string
+        default: './'
+      package_script:
+        required: false
+        type: string
+        default: './scripts/package_lambda.sh'
+      artifact_path:
+        required: false
+        type: string
+        default: 'app/lambda.zip'
+    secrets: {}
+
+jobs:
+  upload-package:
+    runs-on: ubuntu-latest
+    needs: []
+    defaults:
+      run:
+        working-directory: ${{ inputs.project_root }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Make package script executable
+        run: |
+          chmod +x "${{ inputs.package_script }}"
+
+      - name: Build lambda zip
+        run: |
+          "${{ inputs.package_script }}"
+
+      - name: Upload Lambda Package as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: lambda-package
+          path: ${{ inputs.artifact_path }}

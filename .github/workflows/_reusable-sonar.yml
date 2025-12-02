@@ -1,4 +1,4 @@
-name: _reusable-sonar-python
+name: _reusable-sonar
 on:
   workflow_call:
     inputs:

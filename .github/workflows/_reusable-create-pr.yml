@@ -1,0 +1,67 @@
+name: _reusable-create-pr
+
+on:
+  workflow_call:
+    inputs:
+      base_branch:
+        required: false
+        type: string
+        default: 'develop'
+      title:
+        required: false
+        type: string
+        default: ''
+      body:
+        required: false
+        type: string
+        default: ''
+    secrets:
+      GITHUB_TOKEN:
+        required: true
+
+jobs:
+  create-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create Pull Request
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            // Determine the branch name from the caller's context
+            const branch = context.ref.replace('refs/heads/', '');
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const base = '${{ inputs.base_branch }}';
+
+            const titleInput = '${{ inputs.title }}';
+            const bodyInput = '${{ inputs.body }}';
+
+            // Check if an open PR from this branch to base already exists
+            const { data: prs } = await github.rest.pulls.list({
+              owner,
+              repo,
+              state: 'open',
+              head: `${owner}:${branch}`,
+              base: base
+            });
+
+            if (prs.length > 0) {
+              console.log(`PR already exists: ${prs[0].html_url}`);
+              return;
+            }
+
+            const title = titleInput && titleInput.length > 0 ? titleInput : `Merge ${branch} into ${base}`;
+            const body = bodyInput && bodyInput.length > 0 ? bodyInput : `Automated PR created after successful CI on branch ${branch}.`;
+
+            const pr = await github.rest.pulls.create({
+              owner,
+              repo,
+              head: branch,
+              base: base,
+              title: title,
+              body: body,
+              draft: false
+            });
+
+            console.log(`Created PR ${pr.data.html_url}`);
