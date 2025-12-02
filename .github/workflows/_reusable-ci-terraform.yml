@@ -11,6 +11,14 @@ on:
         required: false
         type: string
         default: 'us-east-1'
+      lambda_s3_bucket:
+        required: false
+        type: string
+        default: ''
+      lambda_s3_key:
+        required: false
+        type: string
+        default: ''
     secrets:
       AWS_ACCESS_KEY_ID:
         required: true
@@ -54,17 +62,25 @@ jobs:
 
       - name: Terraform Init
         id: init
+        env:
+          TF_VAR_lambda_s3_bucket: ${{ inputs.lambda_s3_bucket }}
+          TF_VAR_lambda_s3_key: ${{ inputs.lambda_s3_key }}
         run: |
           terraform init -no-color
 
       - name: Terraform Validate
         id: validate
+        env:
+          TF_VAR_lambda_s3_bucket: ${{ inputs.lambda_s3_bucket }}
+          TF_VAR_lambda_s3_key: ${{ inputs.lambda_s3_key }}
         run: |
           terraform validate -no-color || true
 
       - name: Terraform plan
         id: plan
-        if: github.event_name == 'pull_request'
+        env:
+          TF_VAR_lambda_s3_bucket: ${{ inputs.lambda_s3_bucket }}
+          TF_VAR_lambda_s3_key: ${{ inputs.lambda_s3_key }}
         run: |
           terraform plan -no-color -input=false
         continue-on-error: true
