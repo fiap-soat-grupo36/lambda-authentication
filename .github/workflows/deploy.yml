@@ -37,7 +37,7 @@ jobs:
       - name: Run tests
         run: |
           # ensure the repository root is on PYTHONPATH so `import app.handler` works
-          PYTHONPATH=.. pytest -q ./test --cov=./ --cov-report=xml:coverage.xml --cov-report=html
+          PYTHONPATH=.. pytest -q ./tests --cov=./ --cov-report=xml:coverage.xml --cov-report=html
 
       - name: Upload coverage artifact
         uses: actions/upload-artifact@v4
@@ -59,14 +59,16 @@ jobs:
     - name: SonarQube Scan
       uses: SonarSource/sonarqube-scan-action@v6.0.0 # Ex: v4.1.0 or sha1, See the latest version at https://github.com/marketplace/actions/official-sonarqube-scan
       with:
-        projectBaseDir: app/src
+        # Use the repository's `app` folder as the Sonar project base and
+        # point sonar.sources/tests to the actual directories in this repo.
+        projectBaseDir: app
         args: >
             -Dsonar.organization='fiap-soat-grupo36'
             "-Dsonar.projectName=Lambda Authentication"
             -Dsonar.projectKey='fiap-soat-grupo36_lambda-authentication'
             -Dsonar.python.coverage.reportPaths=coverage.xml
-            -Dsonar.sources=lib/
-            -Dsonar.tests=tests/
+            -Dsonar.sources=src
+            -Dsonar.tests=tests
             -Dsonar.test.exclusions=tests/**
             -Dsonar.verbose=true
 
