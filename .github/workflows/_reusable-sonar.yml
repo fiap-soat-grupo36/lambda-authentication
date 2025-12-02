@@ -57,6 +57,7 @@ jobs:
           fetch-depth: 0
 
       - name: Set up JDK (required by SonarScanner)
+        id: setup_jdk
         uses: actions/setup-java@v4
         with:
           java-version: ${{ inputs.java_version }}
@@ -100,6 +101,10 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
           set -euo pipefail
+          # ensure the JAVA_HOME from setup-java is used
+          export PATH="$JAVA_HOME/bin:$PATH"
+          echo "---- Java used for scan (java -version) ----"
+          java -version || true
           SCANNER_VER=${{ inputs.scanner_version }}
           SCANNER_ZIP=sonar-scanner-cli-${SCANNER_VER}-linux.zip
           SCANNER_URL="https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/${SCANNER_ZIP}"
