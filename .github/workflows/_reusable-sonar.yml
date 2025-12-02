@@ -104,11 +104,12 @@ jobs:
           SCANNER_ZIP=sonar-scanner-cli-${SCANNER_VER}-linux.zip
           SCANNER_URL="https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/${SCANNER_ZIP}"
           echo "Attempting to download SonarScanner ${SCANNER_VER} from ${SCANNER_URL}"
+
           # Try download; if not found or not a valid zip, try fallback versions
           try_download() {
-            local ver="$1"
-            local zip="sonar-scanner-cli-${ver}-linux.zip"
-            local url="https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/${zip}"
+            ver="$1"
+            zip="sonar-scanner-cli-${ver}-linux.zip"
+            url="https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/${zip}"
             echo "Downloading ${zip} from ${url}"
             curl -fSL -o "/tmp/${zip}" "${url}" || return 1
             # quick sanity check: verify it's a zip by checking the file signature
@@ -122,10 +123,8 @@ jobs:
             fi
           }
 
-          # primary attempt
           if ! try_download "${SCANNER_VER}"; then
             echo "Primary download failed for version ${SCANNER_VER}, trying fallbacks..."
-            # fallback list (newer known working versions)
             for v in 4.8.1.3023 4.7.0.2747 4.6.2.2472; do
               if try_download "${v}"; then
                 echo "Using fallback SonarScanner version ${v}"
@@ -133,10 +132,21 @@ jobs:
               fi
             done
           fi
-          # At this point SCANNER_ZIP and SCANNER_VER should be set to a valid file
+
+          # unzip and locate extracted directory (handles different archive root names)
           unzip -q /tmp/${SCANNER_ZIP} -d /tmp
-          export PATH="/tmp/sonar-scanner-${SCANNER_VER}/bin:$PATH"
-          echo "Running sonar-scanner"
+          SCANNER_DIR=$(find /tmp -maxdepth 1 -type d -name "sonar-scanner*" | head -n1 || true)
+          if [ -z "${SCANNER_DIR}" ]; then
+            echo "Could not find extracted sonar-scanner directory under /tmp" >&2
+            ls -la /tmp
+            exit 2
+          fi
+          echo "Found scanner dir: ${SCANNER_DIR}"
+          # ensure the scanner bin is executable
+          chmod -R +x "${SCANNER_DIR}/bin" || true
+          export PATH="${SCANNER_DIR}/bin:$PATH"
+          echo "Running sonar-scanner from ${SCANNER_DIR}/bin"
+
           # prepare sonar properties
           sonar_args=(
             -Dsonar.host.url="${{ inputs.sonar_host }}"
@@ -151,4 +161,6 @@ jobs:
               -Dsonar.sources=app,src
             )
           fi
-          sonar-scanner "${sonar_args[@]}"
+
+          # invoke the scanner directly from the extracted bin folder
+          "${SCANNER_DIR}/bin/sonar-scanner" "${sonar_args[@]}"
