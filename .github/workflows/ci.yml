@@ -37,6 +37,7 @@ jobs:
 
   ci-terraform:
     uses: ./.github/workflows/_reusable-ci-terraform.yml
+    needs: [build-python]
     with:
       infra_dir: "./infra/"
       aws_region: "us-east-1"
@@ -46,7 +47,7 @@ jobs:
 
   create_pr:
     uses: ./.github/workflows/_reusable-create-pr.yml
-    needs: [ci-terraform, build-python]
+    needs: [ci-terraform]
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/feature/')
     with:
       base_branch: "develop"
