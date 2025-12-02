@@ -50,9 +50,7 @@ jobs:
   sonarcloud:
     needs: build-python
     uses: ./.github/workflows/_reusable-sonar.yml
-    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main'
     with:
-      java_version: '21'
       sonar_org: 'fiap-soat-grupo36'
       sonar_project_key: 'fiap-soat-grupo36_oficina-lambda-authentication'
       sonar_host: 'https://sonarcloud.io'

@@ -5,7 +5,7 @@ on:
       java_version:
         required: false
         type: string
-        default: '21'
+        default: '17'
       sonar_host:
         required: false
         type: string
@@ -16,10 +16,30 @@ on:
       sonar_project_key:
         required: true
         type: string
+      language:
+        required: false
+        type: string
+        default: 'python'
+      python_version:
+        required: false
+        type: string
+        default: '3.12'
+      requirements_path:
+        required: false
+        type: string
+        default: 'requirements.txt'
+      test_command:
+        required: false
+        type: string
+        default: ''
+      coverage_report:
+        required: false
+        type: string
+        default: 'coverage.xml'
       scanner_version:
         required: false
         type: string
-        default: '4.0.0.4121'
+        default: '4.8.1.3023'
       maven_args:
         required: false
         type: string
@@ -36,23 +56,70 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up JDK
+      - name: Set up JDK (required by SonarScanner)
         uses: actions/setup-java@v4
         with:
           java-version: ${{ inputs.java_version }}
           distribution: temurin
-          cache: maven
 
-      - name: Build project
-        run: mvn --batch-mode clean compile test-compile ${{ inputs.maven_args }}
+      - name: "Python path: setup and tests"
+        if: ${{ inputs.language == 'python' }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ inputs.python_version }}
 
-      - name: Run tests and SonarCloud Scan
+      - name: Install Python dependencies and run tests
+        if: ${{ inputs.language == 'python' }}
         env:
-          GITHUB_TOKEN: ${{ github.token }}
+          PYTHONUNBUFFERED: 1
+        run: |
+          # install test deps
+          if [ -f "${{ inputs.requirements_path }}" ]; then
+            python -m pip install --upgrade pip
+            pip install -r "${{ inputs.requirements_path }}"
+          else
+            python -m pip install --upgrade pip
+          fi
+          # install test tools if not present
+          pip install pytest pytest-cov || true
+          # run tests if a command was provided, otherwise try default discovery
+          if [ -n "${{ inputs.test_command }}" ]; then
+            eval "${{ inputs.test_command }}"
+          else
+            # run pytest and generate coverage xml at the configured path
+            pytest --cov=./ --cov-report=xml:${{ inputs.coverage_report }} || true
+          fi
+
+      - name: Build (Maven) and Sonar (Java projects)
+        if: ${{ inputs.language == 'maven' }}
+        run: |
+          mvn --batch-mode clean compile test-compile ${{ inputs.maven_args }}
+
+      - name: Run SonarScanner CLI
+        env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
-          mvn --batch-mode verify sonar:sonar \
-            -Dsonar.host.url="${{ inputs.sonar_host }}" \
-            -Dsonar.organization="${{ inputs.sonar_org }}" \
-            -Dsonar.projectKey="${{ inputs.sonar_project_key }}" \
-            ${{ inputs.maven_args }}
+          set -euo pipefail
+          SCANNER_VER=${{ inputs.scanner_version }}
+          SCANNER_ZIP=sonar-scanner-cli-${SCANNER_VER}-linux.zip
+          SCANNER_URL="https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/${SCANNER_ZIP}"
+          echo "Downloading SonarScanner ${SCANNER_VER} from ${SCANNER_URL}"
+          curl -sSL -o /tmp/${SCANNER_ZIP} "${SCANNER_URL}"
+          unzip -q /tmp/${SCANNER_ZIP} -d /tmp
+          export PATH="/tmp/sonar-scanner-${SCANNER_VER}/bin:$PATH"
+          echo "Running sonar-scanner"
+          # prepare sonar properties
+          sonar_args=(
+            -Dsonar.host.url="${{ inputs.sonar_host }}"
+            -Dsonar.organization="${{ inputs.sonar_org }}"
+            -Dsonar.projectKey="${{ inputs.sonar_project_key }}"
+            -Dsonar.login="${SONAR_TOKEN}"
+          )
+          if [ "${{ inputs.language }}" = "python" ]; then
+            sonar_args+=(
+              -Dsonar.python.version="${{ inputs.python_version }}"
+              -Dsonar.python.coverage.reportPaths="${{ inputs.coverage_report }}"
+              -Dsonar.sources=app,src
+            )
+          fi
+          sonar-scanner "${sonar_args[@]}"
