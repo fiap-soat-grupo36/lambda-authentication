@@ -1,5 +1,5 @@
 resource "aws_lambda_function" "auth_lambda" {
-  filename         = "${path.module}/../app/lambda.zip"
+  #filename         = "${path.module}/../app/lambda.zip"
   function_name    = "fiap-auth-lambda"
   handler          = "handler.lambda_handler"
   runtime          = "python3.12"
