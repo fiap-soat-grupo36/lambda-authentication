@@ -19,6 +19,10 @@ on:
         required: false
         type: string
         default: ''
+      tfvars_file:
+        required: false
+        type: string
+        default: ''
     secrets:
       AWS_ACCESS_KEY_ID:
         required: true
@@ -40,20 +44,6 @@ jobs:
           aws-access-key-id: '${{ secrets.AWS_ACCESS_KEY_ID }}'
           aws-secret-access-key: '${{ secrets.AWS_SECRET_ACCESS_KEY }}'
           aws-region: ${{ inputs.aws_region }}
-
-      - name: Ensure lambda zip exists (placeholder for first-deploy)
-        working-directory: ./
-        run: |
-          python - <<'PY'
-          import os, zipfile
-          p=os.path.join(os.getcwd(),'app','lambda.zip')
-          if not os.path.exists(p):
-            os.makedirs(os.path.dirname(p), exist_ok=True)
-            z=zipfile.ZipFile(p,'w')
-            z.writestr('__placeholder__.txt','placeholder')
-            z.close()
-          print('lambda zip ready:', p)
-          PY
 
       - name: Set up Terraform CLI
         uses: hashicorp/setup-terraform@v3.1.2
@@ -81,9 +71,18 @@ jobs:
         env:
           TF_VAR_lambda_s3_bucket: ${{ inputs.lambda_s3_bucket }}
           TF_VAR_lambda_s3_key: ${{ inputs.lambda_s3_key }}
+          TFVARS_FILE: ${{ inputs.tfvars_file }}
         run: |
-          terraform plan -no-color -input=false
-        continue-on-error: true
+          set -euo pipefail
+          PLAN_CMD=(terraform plan -no-color -input=false)
+          if [ -n "${TFVARS_FILE:-}" ]; then
+            echo "Using tfvars file: ${TFVARS_FILE}"
+            PLAN_CMD+=( -var-file="${TFVARS_FILE}" )
+          else
+            echo "No tfvars file provided; running plan without -var-file"
+          fi
+          "${PLAN_CMD[@]}"
+        continue-on-error: false
 
       - uses: actions/github-script@v6
         name: Comment PR with plan details
