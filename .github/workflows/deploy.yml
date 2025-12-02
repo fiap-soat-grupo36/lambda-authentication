@@ -67,10 +67,7 @@ jobs:
             -Dsonar.organization='fiap-soat-grupo36'
             "-Dsonar.projectName=Lambda Authentication"
             -Dsonar.projectKey='fiap-soat-grupo36_lambda-authentication'
-            # coverage.xml is generated under app/coverage.xml (tests run from app/),
-            # so keep the path relative to projectBaseDir (app)
             -Dsonar.python.coverage.reportPaths=coverage.xml
-            # src and tests live at the repository root, so relative to `app` they are ../src and ../tests
             -Dsonar.sources=../src
             -Dsonar.tests=../tests
             -Dsonar.test.exclusions=../tests/**
