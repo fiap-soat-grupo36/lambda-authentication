@@ -50,7 +50,6 @@ jobs:
 
       - name: Install project dependencies
         run: |
-          ls
           python -m pip install --upgrade pip
           if [ -f "${{ inputs.requirements_file }}" ]; then
             pip install -r "${{ inputs.requirements_file }}"
@@ -67,13 +66,39 @@ jobs:
 
       - name: Install SonarScanner CLI
         run: |
+          set -euo pipefail
           SCANNER_VERSION=${{ inputs.scanner_version }}
           ZIP=sonar-scanner-cli-${SCANNER_VERSION}.zip
           URL="https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/${ZIP}"
           echo "Downloading SonarScanner from ${URL}"
-          wget -q "$URL" -O "$ZIP"
+
+          # Prefer curl if available; fall back to wget. Use retries and fail loudly with HTTP status.
+          if command -v curl >/dev/null 2>&1; then
+            echo "Using curl to download"
+            # -f: fail on HTTP errors, -S: show error, -L: follow redirects, --retry: retry on transient errors
+            curl -fSL --retry 5 --retry-delay 2 -o "$ZIP" "$URL" || {
+              echo "curl failed to download ${URL}" >&2
+              ls -la || true
+              exit 1
+            }
+          else
+            echo "curl not found, falling back to wget"
+            # --server-response helps show HTTP error code in wget output
+            wget --server-response --tries=5 --retry-connrefused -O "$ZIP" "$URL" || {
+              echo "wget failed to download ${URL}" >&2
+              ls -la || true
+              exit 1
+            }
+          fi
+
+          echo "Unzipping $ZIP"
           unzip -q "$ZIP"
           SCANNER_DIR=$(ls -d sonar-scanner-*/ | head -n 1)
+          if [ -z "${SCANNER_DIR:-}" ]; then
+            echo "Could not find sonar-scanner directory after unzipping $ZIP" >&2
+            ls -la || true
+            exit 1
+          fi
           echo "Adding $SCANNER_DIR/bin to PATH"
           echo "$PWD/$SCANNER_DIR/bin" >> $GITHUB_PATH
 
