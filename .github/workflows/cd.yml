@@ -1,0 +1,40 @@
+name: CD - Deploy Lambda
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  upload-package:
+    uses: ./.github/workflows/_reusable-upload-package.yml
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    with:
+      project_root: "./"
+      package_script: "./scripts/package_lambda.sh"
+      artifact_path: "app/lambda.zip"
+
+  deploy-terraform:
+    uses: ./.github/workflows/_reusable-deploy-terraform.yml
+    needs: [upload-package]
+    with:
+      infra_dir: "./infra/"
+      aws_region: "us-east-1"
+    secrets:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+  deploy-lambda:
+    uses: ./.github/workflows/_reusable-deploy-lambda.yml
+    needs: [deploy-terraform]
+    with:
+      project_root: "./"
+      aws_region: "us-east-1"
+      lambda_function_name: "fiap-auth-lambda"
+    secrets:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
