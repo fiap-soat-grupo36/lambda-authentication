@@ -1,7 +1,6 @@
-from datadog_lambda.wrapper import datadog_lambda_wrapper
+from ddtrace import tracer
 
-
-@datadog_lambda_wrapper
+@tracer.wrap("lambda_handler")
 def lambda_handler(event, context):
     """Simple Lambda handler for authentication placeholder.
 

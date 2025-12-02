@@ -30,3 +30,5 @@ override.tf.json
 terraform.rc
 .venv
 .vscode
+.pytest_cache
+__pycache__
