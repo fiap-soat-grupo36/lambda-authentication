@@ -47,41 +47,23 @@ jobs:
             app/coverage.xml
             app/htmlcov
 
-  sonar:
-    name: "SonarCloud Scan"
-    runs-on: ubuntu-latest
+  sonarcloud:
     needs: build-python
+    uses: ./.github/workflows/_reusable-sonar.yml
     if: github.event_name == 'pull_request' || github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main'
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-
-      - name: Download coverage artifact
-        uses: actions/download-artifact@v6.0.0
-        with:
-          name: coverage-report
-          path: ./coverage_artifact
-
-      - name: Set up Java (required by Sonar scanner)
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-
-      - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-action@v1
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        with:
-          args: >
-            -Dsonar.python.coverage.reportPaths=coverage_artifact/coverage.xml
-            -Dsonar.coverage.exclusions=**/tests/**
-            -Dsonar.sources=app,src
+    with:
+      java_version: '21'
+      sonar_org: 'fiap-soat-grupo36'
+      sonar_project_key: 'fiap-soat-grupo36_oficina-lambda-authentication'
+      sonar_host: 'https://sonarcloud.io'
+      scanner_version: '4.0.0.4121'
+    secrets:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
   upload-package:
     name: "Upload Lambda Package"
     runs-on: ubuntu-latest
-    needs: [build-python, sonar]
+    needs: [build-python, sonarcloud]
     if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     steps:
       - name: Checkout
@@ -216,7 +198,7 @@ jobs:
   create_pr_develop_main:
     name: "Create PR from develop to main"
     runs-on: ubuntu-latest
-    needs: [ci-terraform, sonar]
+    needs: [ci-terraform, sonarcloud]
     if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
     steps:
       - name: Checkout
