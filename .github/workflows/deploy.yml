@@ -50,7 +50,8 @@ jobs:
     with:
       infra_dir: './infra/'
     secrets:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
   create_pr:
     uses: ./.github/workflows/_reusable-create-pr.yml
@@ -60,8 +61,6 @@ jobs:
       base_branch: 'develop'
       title: ''
       body: ''
-    secrets:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   create_pr_develop_main:
     uses: ./.github/workflows/_reusable-create-pr.yml
@@ -71,8 +70,6 @@ jobs:
       base_branch: 'main'
       title: ''
       body: ''
-    secrets:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   deploy-terraform:
     uses: ./.github/workflows/_reusable-deploy-terraform.yml
