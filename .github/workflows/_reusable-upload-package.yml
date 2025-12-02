@@ -15,7 +15,30 @@ on:
         required: false
         type: string
         default: 'app/lambda.zip'
-    secrets: {}
+      s3_bucket:
+        required: false
+        type: string
+        default: ''
+      s3_key:
+        required: false
+        type: string
+        default: ''
+      aws_region:
+        required: false
+        type: string
+        default: 'us-east-1'
+    secrets:
+      AWS_ACCESS_KEY_ID:
+        required: false
+      AWS_SECRET_ACCESS_KEY:
+        required: false
+    outputs:
+      s3_bucket:
+        description: "S3 bucket used for the upload"
+        value: "${{ jobs.upload-package.outputs.s3_bucket }}"
+      s3_key:
+        description: "S3 key created for the uploaded artifact"
+        value: "${{ jobs.upload-package.outputs.s3_key }}"
 
 jobs:
   upload-package:
@@ -23,6 +46,9 @@ jobs:
     defaults:
       run:
         working-directory: ${{ inputs.project_root }}
+    outputs:
+      s3_key: ${{ steps.s3upload.outputs.s3_key }}
+      s3_bucket: ${{ steps.s3upload.outputs.s3_bucket }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -40,3 +66,22 @@ jobs:
         with:
           name: lambda-package
           path: ${{ inputs.artifact_path }}
+
+      - name: Upload to S3 (optional)
+        id: s3upload
+        if: ${{ inputs.s3_bucket != '' }}
+        run: |
+          python -m pip install --upgrade pip
+          pip install awscli --quiet
+          export AWS_DEFAULT_REGION=${{ inputs.aws_region }}
+          # configure credentials for the runner
+          mkdir -p ~/.aws
+          printf "[default]\naws_access_key_id = %s\naws_secret_access_key = %s\n" "${{ secrets.AWS_ACCESS_KEY_ID }}" "${{ secrets.AWS_SECRET_ACCESS_KEY }}" > ~/.aws/credentials
+          KEY=${{ inputs.s3_key }}
+          if [ -z "$KEY" ]; then
+            KEY=$(basename "${{ inputs.artifact_path }}")
+          fi
+          echo "Uploading ${{ inputs.artifact_path }} to s3://${{ inputs.s3_bucket }}/$KEY"
+          aws s3 cp "${{ inputs.artifact_path }}" "s3://${{ inputs.s3_bucket }}/$KEY" --only-show-errors
+          echo "s3_key=$KEY" >> $GITHUB_OUTPUT
+          echo "s3_bucket=${{ inputs.s3_bucket }}" >> $GITHUB_OUTPUT
