@@ -37,7 +37,7 @@ jobs:
 
   upload-package:
     uses: ./.github/workflows/_reusable-upload-package.yml
-    needs: [build-python]
+    needs: [sonarqube]
     if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     with:
       project_root: './'
@@ -55,7 +55,7 @@ jobs:
 
   create_pr:
     uses: ./.github/workflows/_reusable-create-pr.yml
-    needs: [ci-terraform]
+    needs: [ci-terraform, sonarqube]
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/feature/')
     with:
       base_branch: 'develop'
