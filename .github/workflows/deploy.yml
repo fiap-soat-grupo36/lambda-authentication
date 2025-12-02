@@ -8,6 +8,11 @@ on:
     types: [ opened, synchronize, reopened ]
   workflow_dispatch:
 
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
 jobs:
   build-python:
     name: "CI - Python 3.12"
