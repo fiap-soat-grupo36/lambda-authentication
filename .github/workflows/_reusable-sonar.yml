@@ -50,6 +50,7 @@ jobs:
 
       - name: Install project dependencies
         run: |
+          ls
           python -m pip install --upgrade pip
           if [ -f "${{ inputs.requirements_file }}" ]; then
             pip install -r "${{ inputs.requirements_file }}"
