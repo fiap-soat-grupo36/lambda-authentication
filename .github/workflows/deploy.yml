@@ -31,8 +31,8 @@ jobs:
 
       - name: Run tests
         run: |
-          # explicitly point pytest to the test folder to avoid 'collected 0 items'
-          pytest -q ./test --cov=./ --cov-report=xml:coverage.xml --cov-report=html
+          # ensure the repository root is on PYTHONPATH so `import app.handler` works
+          PYTHONPATH=.. pytest -q ./test --cov=./ --cov-report=xml:coverage.xml --cov-report=html
 
       - name: Upload coverage artifact
         uses: actions/upload-artifact@v4
