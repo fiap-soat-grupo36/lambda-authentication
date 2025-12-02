@@ -103,8 +103,37 @@ jobs:
           SCANNER_VER=${{ inputs.scanner_version }}
           SCANNER_ZIP=sonar-scanner-cli-${SCANNER_VER}-linux.zip
           SCANNER_URL="https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/${SCANNER_ZIP}"
-          echo "Downloading SonarScanner ${SCANNER_VER} from ${SCANNER_URL}"
-          curl -sSL -o /tmp/${SCANNER_ZIP} "${SCANNER_URL}"
+          echo "Attempting to download SonarScanner ${SCANNER_VER} from ${SCANNER_URL}"
+          # Try download; if not found or not a valid zip, try fallback versions
+          try_download() {
+            local ver="$1"
+            local zip="sonar-scanner-cli-${ver}-linux.zip"
+            local url="https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/${zip}"
+            echo "Downloading ${zip} from ${url}"
+            curl -fSL -o "/tmp/${zip}" "${url}" || return 1
+            # quick sanity check: verify it's a zip by checking the file signature
+            if unzip -t "/tmp/${zip}" >/dev/null 2>&1; then
+              SCANNER_VER="${ver}"
+              SCANNER_ZIP="${zip}"
+              return 0
+            else
+              echo "Downloaded file /tmp/${zip} is not a valid zip archive"
+              return 2
+            fi
+          }
+
+          # primary attempt
+          if ! try_download "${SCANNER_VER}"; then
+            echo "Primary download failed for version ${SCANNER_VER}, trying fallbacks..."
+            # fallback list (newer known working versions)
+            for v in 4.8.1.3023 4.7.0.2747 4.6.2.2472; do
+              if try_download "${v}"; then
+                echo "Using fallback SonarScanner version ${v}"
+                break
+              fi
+            done
+          fi
+          # At this point SCANNER_ZIP and SCANNER_VER should be set to a valid file
           unzip -q /tmp/${SCANNER_ZIP} -d /tmp
           export PATH="/tmp/sonar-scanner-${SCANNER_VER}/bin:$PATH"
           echo "Running sonar-scanner"
