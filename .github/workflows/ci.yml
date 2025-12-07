@@ -30,7 +30,7 @@ jobs:
       sonar_project_key: "fiap-soat-grupo36_lambda-authentication"
       sonar_host: "https://sonarcloud.io"
       project_dir: "app/"
-      requirements_file: "./app/requirements.txt"
+      requirements_file: "requirements.txt"
       scanner_version: "4.0.0.4121"
     secrets:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
