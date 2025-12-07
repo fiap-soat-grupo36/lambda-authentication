@@ -58,6 +58,7 @@ jobs:
         env:
           TF_VAR_lambda_s3_bucket: ${{ inputs.lambda_s3_bucket }}
           TF_VAR_lambda_s3_key: ${{ inputs.lambda_s3_key }}
+          TF_VAR_aws_region: ${{ inputs.aws_region }}
         run: |
           terraform init -no-color
 
@@ -66,6 +67,7 @@ jobs:
         env:
           TF_VAR_lambda_s3_bucket: ${{ inputs.lambda_s3_bucket }}
           TF_VAR_lambda_s3_key: ${{ inputs.lambda_s3_key }}
+          TF_VAR_aws_region: ${{ inputs.aws_region }}
         run: |
           terraform validate -no-color || true
 
@@ -75,6 +77,7 @@ jobs:
           TF_VAR_lambda_s3_bucket: ${{ inputs.lambda_s3_bucket }}
           TF_VAR_lambda_s3_key: ${{ inputs.lambda_s3_key }}
           TF_VAR_datadog_api_key: ${{ secrets.DD_API_KEY }}
+          TF_VAR_aws_region: ${{ inputs.aws_region }}
           TFVARS_FILE: ${{ inputs.tfvars_file }}
         run: |
           set -euo pipefail
