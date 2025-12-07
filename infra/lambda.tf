@@ -20,8 +20,8 @@ resource "aws_lambda_function" "auth_lambda" {
     variables = merge(
       {
         # Basic metadata
-        DD_ENV   = var.environment
-        DD_SERVICE = "fiap-auth-lambda"
+        DD_ENV           = var.environment
+        DD_SERVICE       = "fiap-auth-lambda"
         DD_TRACE_ENABLED = "true"
       },
       var.datadog_api_key != "" ? { DD_API_KEY = var.datadog_api_key } : {}

@@ -42,6 +42,5 @@ variable "environment" {
 variable "aws_region" {
   description = "AWS region for the provider and resources"
   type        = string
-  default     = "us-east-1"
+  default     = "us-east-2"
 }
-
