@@ -12,11 +12,15 @@ permissions:
 jobs:
   upload-package:
     uses: ./.github/workflows/_reusable-upload-package.yml
-    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     with:
       project_root: "./"
       package_script: "./scripts/package_lambda.sh"
       artifact_path: "app/lambda.zip"
+      s3_bucket: "projeto-oficina-terraform"
+      s3_key: "lambda/main/lambda-${{ github.sha }}.zip"
+    secrets:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
   deploy-terraform:
     uses: ./.github/workflows/_reusable-deploy-terraform.yml
@@ -24,17 +28,9 @@ jobs:
     with:
       infra_dir: "./infra/"
       aws_region: "us-east-1"
+      lambda_s3_bucket: ${{ needs.upload-package.outputs.s3_bucket }}
+      lambda_s3_key: ${{ needs.upload-package.outputs.s3_key }}
     secrets:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-
-  deploy-lambda:
-    uses: ./.github/workflows/_reusable-deploy-lambda.yml
-    needs: [deploy-terraform]
-    with:
-      project_root: "./"
-      aws_region: "us-east-1"
-      lambda_function_name: "fiap-auth-lambda"
-    secrets:
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      DD_API_KEY: ${{ secrets.DD_API_KEY }}
