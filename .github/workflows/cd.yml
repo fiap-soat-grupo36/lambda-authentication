@@ -27,7 +27,7 @@ jobs:
     needs: [upload-package]
     with:
       infra_dir: "./infra/"
-      aws_region: "us-east-1"
+      aws_region: "us-east-2"
       lambda_s3_bucket: ${{ needs.upload-package.outputs.s3_bucket }}
       lambda_s3_key: ${{ needs.upload-package.outputs.s3_key }}
     secrets:
