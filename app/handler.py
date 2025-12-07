@@ -1,7 +1,10 @@
+from ddtrace import tracer
+
+@tracer.wrap("lambda_handler")
 def lambda_handler(event, context):
     """Simple Lambda handler for authentication placeholder.
 
-    Returns a JSON with a message and echoes the event for quick testing.
+    Wrapped with Datadog Lambda wrapper so traces and logs can be forwarded to Datadog.
     """
     return {
         "statusCode": 200,

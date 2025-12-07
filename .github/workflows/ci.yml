@@ -30,20 +30,36 @@ jobs:
       sonar_project_key: "fiap-soat-grupo36_lambda-authentication"
       sonar_host: "https://sonarcloud.io"
       project_dir: "app/"
-      requirements_file: "app/requirements.txt"
+      requirements_file: "requirements.txt"
       scanner_version: "4.0.0.4121"
     secrets:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
-  ci-terraform:
-    uses: ./.github/workflows/_reusable-ci-terraform.yml
+  upload-package:
+    uses: ./.github/workflows/_reusable-upload-package.yml
     needs: [build-python]
     with:
-      infra_dir: "./infra/"
-      aws_region: "us-east-1"
+      project_root: './'
+      package_script: './scripts/package_lambda.sh'
+      artifact_path: 'app/lambda.zip'
+      s3_bucket: "projeto-oficina-terraform"
+      s3_key: "lambda/dev/lambda-${{ github.sha }}.zip"
     secrets:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+  ci-terraform:
+    uses: ./.github/workflows/_reusable-ci-terraform.yml
+    needs: [upload-package]
+    with:
+      infra_dir: "./infra/"
+      aws_region: "us-east-1"
+      lambda_s3_bucket: ${{ needs.upload-package.outputs.s3_bucket }}
+      lambda_s3_key: ${{ needs.upload-package.outputs.s3_key }}
+    secrets:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      DD_API_KEY: ${{ secrets.DD_API_KEY }}
 
   create_pr:
     uses: ./.github/workflows/_reusable-create-pr.yml
