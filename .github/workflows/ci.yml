@@ -2,9 +2,9 @@ name: CI/CD - Deploy Lambda
 
 on:
   push:
-    branches: [develop, feature/**, hotfix/**, main]
+    branches: [develop, feature/**, hotfix/**]
   pull_request:
-    branches: [main, develop]
+    branches: [develop]
     types: [opened, synchronize, reopened]
   workflow_dispatch:
 
