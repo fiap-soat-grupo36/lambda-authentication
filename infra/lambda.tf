@@ -13,7 +13,7 @@ module "lambda-datadog" {
     "DD_API_KEY" : var.datadog_api_key
     "DD_ENV" : var.environment
     "DD_SERVICE" : "fiap-auth-lambda"
-    "DD_SITE": "https://us5.datadoghq.com/"
+    "DD_SITE": "us5.datadoghq.com"
     "DD_TRACE_ENABLED" : "true"
   }
 
