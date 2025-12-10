@@ -1,15 +1,31 @@
+import time
 from ddtrace import tracer
+from datadog_lambda.metric import lambda_metric
 
-@tracer.wrap("lambda_handler")
 def lambda_handler(event, context):
-    """Simple Lambda handler for authentication placeholder.
+    # add custom tags to the lambda function span,
+    # does NOT work when X-Ray tracing is enabled
+    current_span = tracer.current_span()
+    if current_span:
+        current_span.set_tag('customer.id', '123456')
 
-    Wrapped with Datadog Lambda wrapper so traces and logs can be forwarded to Datadog.
-    """
+    # submit a custom span
+    with tracer.trace("hello.world"):
+        print('Hello, World!')
+
+    # submit a custom metric
+    lambda_metric(
+        metric_name='coffee_house.order_value',
+        value=12.45,
+        tags=['product:latte', 'order:online']
+    )
+
     return {
-        "statusCode": 200,
-        "body": {
-            "message": "Hello from fiap-auth-lambda (Python 3.12)!",
-            "event": event,
-        },
+        'statusCode': 200,
+        'body': get_message()
     }
+
+# trace a function
+@tracer.wrap()
+def get_message():
+    return 'Hello from serverless!'
