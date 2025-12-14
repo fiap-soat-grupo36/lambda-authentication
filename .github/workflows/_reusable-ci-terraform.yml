@@ -23,6 +23,10 @@ on:
         required: false
         type: string
         default: ''
+      workspace:
+        description: 'Terraform workspace name'
+        required: true
+        type: string
     secrets:
       AWS_ACCESS_KEY_ID:
         required: true
@@ -61,6 +65,18 @@ jobs:
           TF_VAR_aws_region: ${{ inputs.aws_region }}
         run: |
           terraform init -no-color
+
+      - name: Select Terraform Workspace
+        working-directory: ./infra
+        run: |
+          echo "🔍 Listing existing workspaces..."
+          terraform workspace list
+          
+          echo "📋 Selecting workspace: ${{ inputs.workspace }}"
+          terraform workspace select ${{ inputs.workspace }} || terraform workspace new ${{ inputs.workspace }}
+          
+          echo "✅ Current workspace:"
+          terraform workspace show
 
       - name: Terraform Validate
         id: validate
