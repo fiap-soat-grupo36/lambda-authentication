@@ -57,6 +57,7 @@ jobs:
       aws_region: "us-east-2"
       lambda_s3_bucket: ${{ needs.upload-package.outputs.s3_bucket }}
       lambda_s3_key: ${{ needs.upload-package.outputs.s3_key }}
+      workspace: dev
     secrets:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
