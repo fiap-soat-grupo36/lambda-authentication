@@ -19,6 +19,10 @@ on:
         required: false
         type: string
         default: ''
+      tfvars_file:
+        required: false
+        type: string
+        default: ''
     secrets:
       AWS_ACCESS_KEY_ID:
         required: true
@@ -61,4 +65,8 @@ jobs:
           TF_VAR_lambda_s3_key: ${{ inputs.lambda_s3_key }}
           TF_VAR_datadog_api_key: ${{ secrets.DD_API_KEY }}
         run: |
-          terraform apply -auto-approve -input=false
+          if [ -n "${{ inputs.tfvars_file }}" ]; then
+            terraform apply -auto-approve -input=false -var-file=${{ inputs.tfvars_file }}
+          else
+            terraform apply -auto-approve -input=false
+          fi
