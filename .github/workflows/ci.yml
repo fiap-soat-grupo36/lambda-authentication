@@ -1,4 +1,4 @@
-name: CI/CD - Deploy Lambda
+name: CI - Python Lambda
 
 on:
   push:
