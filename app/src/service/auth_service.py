@@ -1,6 +1,6 @@
 from typing import Dict
 
-from exception.validacoes_exception import ClienteInativoError
+from src.exception.validacoes_exception import ClienteInativoError
 from src.repository.cliente_repository import ClientRepository
 from src.service.token_service import GeradorTokenJWT
 from src.service.validador_cpf_service import ValidadorCPFService
