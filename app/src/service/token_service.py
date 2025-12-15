@@ -15,11 +15,11 @@ class GeradorTokenJWT:
         if GeradorTokenJWT._segredo_cache:
             return GeradorTokenJWT._segredo_cache
 
-        cliente = boto3.client("secretsmanager", region_name=region)
+        cliente = boto3.client('secretsmanager', region_name=region)
         resposta = cliente.get_secret_value(SecretId=secret_name)
 
-        dados = json.loads(resposta["SecretString"])
-        segredo = dados.get("jwt_secret")
+        dados = json.loads(resposta['SecretString'])
+        segredo = dados.get('jwt_secret')
 
         if not segredo:
             raise RuntimeError("Chave 'jwt_secret' não encontrada no Secret.")
@@ -29,13 +29,13 @@ class GeradorTokenJWT:
 
     @staticmethod
     def gerar_token(
-            cpf: str,
-            cliente_id: str,
-            nome: str,
-            ativo: bool,
-            secret_name: str,
-            region: str,
-            expira_em_minutos: int = 30
+        cpf: str,
+        cliente_id: str,
+        nome: str,
+        ativo: bool,
+        secret_name: str,
+        region: str,
+        expira_em_minutos: int = 30,
     ) -> str:
 
         segredo = GeradorTokenJWT._carregar_segredo(secret_name, region)
@@ -44,27 +44,24 @@ class GeradorTokenJWT:
         expira = agora + timedelta(minutes=expira_em_minutos)
 
         payload = {
-            "cpf": cpf,
-            "cliente_id": cliente_id,
-            "nome": nome,
-            "ativo": ativo,
-            "iat": int(agora.timestamp()),
-            "exp": int(expira.timestamp())
+            'cpf': cpf,
+            'cliente_id': cliente_id,
+            'nome': nome,
+            'ativo': ativo,
+            'iat': int(agora.timestamp()),
+            'exp': int(expira.timestamp()),
         }
 
-        token = jwt.encode(payload, segredo, algorithm="HS256")
+        token = jwt.encode(payload, segredo, algorithm='HS256')
 
         if isinstance(token, bytes):
-            token = token.decode("utf-8")
+            token = token.decode('utf-8')
 
         return token
 
     @staticmethod
     def validar_token(
-            token: str,
-            secret_name: str,
-            region: str,
-            algoritmo: str = "HS256"
+        token: str, secret_name: str, region: str, algoritmo: str = 'HS256'
     ) -> Dict[str, Any]:
 
         segredo = GeradorTokenJWT._carregar_segredo(secret_name, region)
@@ -73,8 +70,6 @@ class GeradorTokenJWT:
             token,
             segredo,
             algorithms=[algoritmo],
-            options={
-                "verify_iat": False
-            }
+            options={'verify_iat': False},
         )
         return payload

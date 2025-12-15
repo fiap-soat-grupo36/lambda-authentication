@@ -15,9 +15,9 @@ class GerenciadorDB:
 
     @staticmethod
     def _carregar_credenciais(secret_name: str, region: str):
-        cliente = boto3.client("secretsmanager", region_name=region)
+        cliente = boto3.client('secretsmanager', region_name=region)
         resposta = cliente.get_secret_value(SecretId=secret_name)
-        return json.loads(resposta["SecretString"])
+        return json.loads(resposta['SecretString'])
 
     @classmethod
     def inicializar(cls, secret_name: str, region: str):
@@ -34,16 +34,20 @@ class GerenciadorDB:
             max_overflow=0,
             pool_recycle=3600,
             pool_pre_ping=True,
-            echo=False
+            echo=False,
         )
 
-        cls._SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=cls._engine)
+        cls._SessionLocal = sessionmaker(
+            autocommit=False, autoflush=False, bind=cls._engine
+        )
 
     @classmethod
     def get_session(cls) -> Session:
 
         if cls._SessionLocal is None:
-            raise RuntimeError("Database não inicializado. Chame inicializar() primeiro.")
+            raise RuntimeError(
+                'Database não inicializado. Chame inicializar() primeiro.'
+            )
 
         return cls._SessionLocal()
 

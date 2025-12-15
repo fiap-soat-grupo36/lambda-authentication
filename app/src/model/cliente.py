@@ -14,9 +14,9 @@ class ClienteModel(Base):
 
     def to_dict(self):
         return {
-            "id": self.id,
-            "cpf": self.cpf,
-            "nome": self.nome,
-            "email": self.email,
-            "ativo": self.ativo
+            'id': self.id,
+            'cpf': self.cpf,
+            'nome': self.nome,
+            'email': self.email,
+            'ativo': self.ativo,
         }
