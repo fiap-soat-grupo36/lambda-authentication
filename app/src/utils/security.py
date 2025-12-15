@@ -3,7 +3,7 @@ from typing import Dict, Any
 
 from jwt import ExpiredSignatureError, InvalidTokenError
 
-from service.token_service import GeradorTokenJWT
+from src.service.token_service import GeradorTokenJWT
 
 
 def obter_usuario_atual(token: str) -> Dict[str, Any]:

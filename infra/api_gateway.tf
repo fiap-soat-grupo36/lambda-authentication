@@ -41,7 +41,7 @@ resource "aws_api_gateway_integration" "login_lambda" {
 
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
-  uri                     = aws_lambda_function
+  uri                     = module.lambda-datadog.invoke_arn
 }
 
 
@@ -50,7 +50,7 @@ resource "aws_api_gateway_integration" "login_lambda" {
 resource "aws_lambda_permission" "apigw_invoke_auth" {
   statement_id  = "AllowAPIGatewayInvokeAuth"
   action        = "lambda:InvokeFunction"
-  function_name = ""
+  function_name = module.lambda-datadog.function_name
   principal     = "apigateway.amazonaws.com"
 
   source_arn = "${aws_api_gateway_rest_api.auth_api.execution_arn}/*/*"
