@@ -1,4 +1,4 @@
-name: _reusable-deploy-terraform
+name: _reusable-ci-terraform
 
 on:
   workflow_call:
@@ -15,11 +15,7 @@ on:
         required: false
         type: string
         default: ''
-      lambda_s3_key_dev:
-        required: false
-        type: string
-        default: ''
-      lambda_s3_key_prod:
+      lambda_s3_key:
         required: false
         type: string
         default: ''
@@ -35,6 +31,10 @@ on:
         description: 'Environment to deploy (dev or prod)'
         required: true
         type: string
+      auto_apply:
+        required: false
+        type: boolean
+        default: false
     secrets:
       AWS_ACCESS_KEY_ID:
         required: true
@@ -44,7 +44,7 @@ on:
         required: true
 
 jobs:
-  deploy-terraform:
+  ci-terraform:
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -67,8 +67,12 @@ jobs:
 
       - name: Terraform Init
         id: init
+        env:
+          TF_VAR_lambda_s3_bucket: ${{ inputs.lambda_s3_bucket }}
+          TF_VAR_lambda_s3_key: ${{ inputs.lambda_s3_key }}
+          TF_VAR_aws_region: ${{ inputs.aws_region }}
         run: |
-          terraform init
+          terraform init -no-color
 
       - name: Select Terraform Workspace
         working-directory: ./infra
@@ -81,6 +85,60 @@ jobs:
           
           echo "✅ Current workspace:"
           terraform workspace show
+
+      - name: Terraform Validate
+        id: validate
+        env:
+          TF_VAR_lambda_s3_bucket: ${{ inputs.lambda_s3_bucket }}
+          TF_VAR_lambda_s3_key: ${{ inputs.lambda_s3_key }}
+          TF_VAR_aws_region: ${{ inputs.aws_region }}
+        run: |
+          terraform validate -no-color || true
+
+      - name: Terraform plan
+        id: plan
+        env:
+          TF_VAR_lambda_s3_bucket: ${{ inputs.lambda_s3_bucket }}
+          TF_VAR_lambda_s3_key: ${{ inputs.lambda_s3_key }}
+          TF_VAR_datadog_api_key: ${{ secrets.DD_API_KEY }}
+          TF_VAR_aws_region: ${{ inputs.aws_region }}
+          TFVARS_FILE: ${{ inputs.tfvars_file }}
+        run: |
+          set -euo pipefail
+          PLAN_CMD=(terraform plan -no-color -input=false)
+          if [ -n "${TFVARS_FILE:-}" ]; then
+            echo "Using tfvars file: ${TFVARS_FILE}"
+            PLAN_CMD+=( -var-file="${TFVARS_FILE}" )
+          else
+            echo "No tfvars file provided; running plan without -var-file"
+          fi
+          "${PLAN_CMD[@]}"
+        continue-on-error: false
+
+      - uses: actions/github-script@v6
+        name: Comment PR with plan details
+        if: github.event_name == 'pull_request'
+        env:
+          PLAN: "terraform\n${{ steps.plan.outputs.stdout }}"
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const output = `#### Terraform Initialization ⚙️\`${{ steps.init.outcome }}\`
+            #### Terraform Validation 🤖\`${{ steps.validate.outcome }}\`
+            #### Terraform Plan 📖\`${{ steps.plan.outcome }}\`
+
+            *Pushed by: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            })
+
+      - name: Terraform Plan Status
+        if: steps.plan.outcome == 'failure'
+        run: exit 1
 
       - name: Terraform Apply
         id: apply
