@@ -142,6 +142,7 @@ jobs:
 
       - name: Terraform Apply
         id: apply
+        if: inputs.auto_apply == true
         env:
           TF_VAR_lambda_s3_bucket: ${{ inputs.lambda_s3_bucket }}
           TF_VAR_lambda_s3_key: ${{ inputs.lambda_s3_key }}
