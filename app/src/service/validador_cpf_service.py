@@ -1,16 +1,15 @@
-from distutils.command.clean import clean
-
 from src.exception.validacoes_exception import CPFInvalidoError
 
 
 class ValidadorCPFService:
 
-    def clean(cpf: str) -> str:
-
+    @staticmethod
+    def _limpar_cpf(cpf: str) -> str:
         return ''.join(ch for ch in cpf if ch.isdigit())
 
+    @staticmethod
     def validar_cpf(cpf: str) -> str:
-        cpf = clean(cpf)
+        cpf = ValidadorCPFService._limpar_cpf(cpf)
 
         if len(cpf) != 11:
             raise CPFInvalidoError("CPF deve conter 11 dígitos.")
@@ -23,6 +22,7 @@ class ValidadorCPFService:
 
         return cpf
 
+    @staticmethod
     def _valida_digitos(cpf: str) -> bool:
 
         def calcula_digito(cpf_slice, weight_start):
