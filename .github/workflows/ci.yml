@@ -57,6 +57,7 @@ jobs:
       aws_region: "us-east-2"
       lambda_s3_bucket: ${{ needs.upload-package.outputs.s3_bucket }}
       lambda_s3_key: ${{ needs.upload-package.outputs.s3_key }}
+      tfvars_file: "environments/dev.tfvars"
       workspace: dev
       environment: dev
       auto_apply: false
