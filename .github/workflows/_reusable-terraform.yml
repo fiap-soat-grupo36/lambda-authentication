@@ -144,9 +144,9 @@ jobs:
         id: apply
         env:
           TF_VAR_lambda_s3_bucket: ${{ inputs.lambda_s3_bucket }}
-          TF_VAR_lambda_s3_key_dev: ${{ inputs.lambda_s3_key_dev }}
-          TF_VAR_lambda_s3_key_prod: ${{ inputs.lambda_s3_key_prod }}
+          TF_VAR_lambda_s3_key: ${{ inputs.lambda_s3_key }}
           TF_VAR_datadog_api_key: ${{ secrets.DD_API_KEY }}
+          TF_VAR_aws_region: ${{ inputs.aws_region }}
         run: |
           if [ -n "${{ inputs.tfvars_file }}" ]; then
             terraform apply -auto-approve -input=false -var-file=${{ inputs.tfvars_file }}
