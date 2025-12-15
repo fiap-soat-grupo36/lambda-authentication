@@ -68,6 +68,13 @@ class GeradorTokenJWT:
     ) -> Dict[str, Any]:
 
         segredo = GeradorTokenJWT._carregar_segredo(secret_name, region)
-        payload = jwt.decode(token, segredo, algorithms=[algoritmo])
 
+        payload = jwt.decode(
+            token,
+            segredo,
+            algorithms=[algoritmo],
+            options={
+                "verify_iat": False
+            }
+        )
         return payload
