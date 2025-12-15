@@ -1,41 +1,85 @@
-import contextlib
-from types import SimpleNamespace
-from unittest.mock import Mock
+import json
+from unittest.mock import patch
+
+import pytest
+
+import handler
+from src.exception.validacoes_exception import (
+    CPFInvalidoError,
+    ClienteNaoEncontradoError,
+    ClienteInativoError
+)
 
 
-from app import handler
+class TestLambdaHandler:
 
+    @pytest.fixture
+    def evento_base(self):
+        return {
+            "body": json.dumps({"cpf": "12345678900"})
+        }
 
-def test_lambda_handler_sets_tag_and_sends_metric(monkeypatch):
-    span = SimpleNamespace(calls=[])
-    def set_tag(key, value):
-        span.calls.append((key, value))
-    span.set_tag = set_tag
-    monkeypatch.setattr(handler.tracer, "current_span", lambda: span)
+    @patch("handler.AuthService")
+    def test_handler_sucesso(self, mock_auth_service, evento_base):
+        retorno_esperado = {"access_token": "token.jwt.fake", "token_type": "Bearer"}
+        mock_auth_service.autenticar_cliente.return_value = retorno_esperado
 
-    @contextlib.contextmanager
-    def fake_trace(name):
-        yield
-    monkeypatch.setattr(handler.tracer, "trace", fake_trace)
+        resposta = handler.lambda_handler(evento_base, None)
 
-    metric_mock = Mock()
-    monkeypatch.setattr(handler, "lambda_metric", metric_mock)
+        assert resposta["statusCode"] == 200
+        body = json.loads(resposta["body"])
+        assert body == retorno_esperado
 
-    monkeypatch.setattr(handler, "get_message", lambda: "mensagem de teste")
+        mock_auth_service.autenticar_cliente.assert_called_once()
 
-    resp = handler.lambda_handler({}, None)
+    def test_handler_erro_cpf_obrigatorio(self):
+        evento = {"body": json.dumps({"outra_coisa": "valor"})}
 
-    assert ('customer.id', '123456') in span.calls
+        resposta = handler.lambda_handler(evento, None)
 
-    metric_mock.assert_called_once_with(
-        metric_name='coffee_house.order_value',
-        value=12.45,
-        tags=['product:latte', 'order:online']
-    )
+        assert resposta["statusCode"] == 400
 
-    assert resp["statusCode"] == 200
-    assert resp["body"] == "mensagem de teste"
+        body_dict = json.loads(resposta["body"])
 
+        assert "CPF é obrigatório" in body_dict["erro"]
 
-def test_get_message_returns_expected_string():
-    assert handler.get_message() == "Hello from serverless!"
+    @patch("handler.AuthService")
+    def test_handler_erro_cpf_invalido(self, mock_auth_service, evento_base):
+        mock_auth_service.autenticar_cliente.side_effect = CPFInvalidoError("CPF inválido.")
+
+        resposta = handler.lambda_handler(evento_base, None)
+
+        assert resposta["statusCode"] == 400
+
+        body = json.loads(resposta["body"])
+        assert "CPF inválido" in body["erro"]
+
+    @patch("handler.AuthService")
+    def test_handler_erro_cliente_nao_encontrado(self, mock_auth_service, evento_base):
+        mock_auth_service.autenticar_cliente.side_effect = ClienteNaoEncontradoError("Não achei.")
+
+        resposta = handler.lambda_handler(evento_base, None)
+
+        assert resposta["statusCode"] == 404
+
+        body_dict = json.loads(resposta["body"])
+
+        assert "Não achei" in body_dict["erro"]
+
+    @patch("handler.AuthService")
+    def test_handler_erro_cliente_inativo(self, mock_auth_service, evento_base):
+        mock_auth_service.autenticar_cliente.side_effect = ClienteInativoError("Inativo.")
+
+        resposta = handler.lambda_handler(evento_base, None)
+
+        assert resposta["statusCode"] == 403
+        assert "Inativo" in resposta["body"]
+
+    @patch("handler.AuthService")
+    def test_handler_erro_interno(self, mock_auth_service, evento_base):
+        mock_auth_service.autenticar_cliente.side_effect = Exception("Erro de conexão DB")
+
+        resposta = handler.lambda_handler(evento_base, None)
+
+        assert resposta["statusCode"] == 500
+        assert "Erro interno no servidor" in resposta["body"]
