@@ -3,3 +3,7 @@ pytest-cov
 flake8
 datadog-lambda
 ddtrace
+boto3
+psycopg2-pool
+PyJWT
+sqlalchemy
