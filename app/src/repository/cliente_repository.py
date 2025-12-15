@@ -4,18 +4,18 @@ from src.utils.conexao_db import GerenciadorDB
 
 
 class ClientRepository:
-
     @staticmethod
     def buscar_por_cpf(cpf: str) -> ClienteModel:
         with GerenciadorDB.session_scope() as session:
             cliente = (
-                session
-                .query(ClienteModel)
+                session.query(ClienteModel)
                 .filter(ClienteModel.cpf == cpf)
                 .first()
             )
 
             if not cliente:
-                raise ClienteNaoEncontradoError(f"Cliente com CPF {cpf} não encontrado.")
+                raise ClienteNaoEncontradoError(
+                    f'Cliente com CPF {cpf} não encontrado.'
+                )
 
             return cliente
