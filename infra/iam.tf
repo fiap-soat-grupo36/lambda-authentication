@@ -10,7 +10,7 @@ data "aws_iam_policy_document" "lambda_assume_role" {
 }
 
 resource "aws_iam_role" "lambda_role" {
-  name               = "fiap-lambda-role"
+  name               = "fiap-lambda-role-${local.environment}"
   assume_role_policy = data.aws_iam_policy_document.lambda_assume_role.json
 }
 

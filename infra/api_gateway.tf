@@ -2,7 +2,7 @@
 # API Gateway
 
 resource "aws_api_gateway_rest_api" "auth_api" {
-  name        = "oficina-auth-api"
+  name        = "oficina-auth-api-${local.environment}"
   description = "API de autenticação de clientes via CPF"
 }
 
