@@ -44,8 +44,14 @@ else
 fi
 
 # Copy the handler (and any local code) into build dir
-echo "Copying handler into build dir"
+echo "Copying handler and src directory into build dir"
 cp "$APP_DIR"/handler.py "$BUILD_DIR"/
+
+# Copy the src directory if it exists
+if [ -d "$APP_DIR/src" ]; then
+	echo "Copying src directory"
+	cp -r "$APP_DIR"/src "$BUILD_DIR"/
+fi
 
 # Create the zip from the contents of build dir so that site-packages and handler
 # are at the root of the archive (Lambda expects packages next to handler file).

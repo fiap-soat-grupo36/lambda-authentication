@@ -4,36 +4,71 @@ on:
   push:
     branches: [main, develop]
 
-env:
-  ENV: ${{ github.ref == 'refs/heads/develop' && 'dev' || 'prod' }}
-
 permissions:
   contents: read
   issues: write
   pull-requests: write
 
 jobs:
-  upload-package:
+  # Deploy DEV - apenas na branch develop
+  upload-package-dev:
+    if: github.ref == 'refs/heads/develop'
     uses: ./.github/workflows/_reusable-upload-package.yml
     with:
       project_root: "./"
       package_script: "./scripts/package_lambda.sh"
       artifact_path: "app/lambda.zip"
       s3_bucket: "projeto-oficina-terraform"
-      s3_key: "lambda/${{ env.ENV }}/lambda-${{ github.sha }}.zip"
+      s3_key: "lambda/dev/lambda-${{ github.sha }}.zip"
     secrets:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
-  deploy-terraform:
-    uses: ./.github/workflows/_reusable-deploy-terraform.yml
-    needs: [upload-package]
+  deploy-terraform-dev:
+    if: github.ref == 'refs/heads/develop'
+    uses: ./.github/workflows/_reusable-terraform.yml
+    needs: [upload-package-dev]
     with:
       infra_dir: "./infra/"
       aws_region: "us-east-2"
-      lambda_s3_bucket: ${{ needs.upload-package.outputs.s3_bucket }}
-      lambda_s3_key: ${{ needs.upload-package.outputs.s3_key }}
-      tfvars_file: "environments/${{ env.ENV }}.tfvars"
+      lambda_s3_bucket: ${{ needs.upload-package-dev.outputs.s3_bucket }}
+      lambda_s3_key: ${{ needs.upload-package-dev.outputs.s3_key }}
+      auto_apply: true
+      tfvars_file: "environments/dev.tfvars"
+      workspace: dev
+      environment: dev
+    secrets:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      DD_API_KEY: ${{ secrets.DD_API_KEY }}
+
+  # Deploy PROD - apenas na branch main
+  upload-package-prod:
+    if: github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/_reusable-upload-package.yml
+    with:
+      project_root: "./"
+      package_script: "./scripts/package_lambda.sh"
+      artifact_path: "app/lambda.zip"
+      s3_bucket: "projeto-oficina-terraform"
+      s3_key: "lambda/prod/lambda-${{ github.sha }}.zip"
+    secrets:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+  deploy-terraform-prod:
+    if: github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/_reusable-terraform.yml
+    needs: [upload-package-prod]
+    with:
+      infra_dir: "./infra/"
+      aws_region: "us-east-2"
+      lambda_s3_bucket: ${{ needs.upload-package-prod.outputs.s3_bucket }}
+      lambda_s3_key: ${{ needs.upload-package-prod.outputs.s3_key }}
+      tfvars_file: "environments/prod.tfvars"
+      environment: production
+      workspace: prod
+      auto_apply: true
     secrets:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}

@@ -23,6 +23,18 @@ on:
         required: false
         type: string
         default: ''
+      workspace:
+        description: 'Terraform workspace name'
+        required: true
+        type: string
+      environment:
+        description: 'Environment to deploy (dev or prod)'
+        required: true
+        type: string
+      auto_apply:
+        required: false
+        type: boolean
+        default: false
     secrets:
       AWS_ACCESS_KEY_ID:
         required: true
@@ -61,6 +73,18 @@ jobs:
           TF_VAR_aws_region: ${{ inputs.aws_region }}
         run: |
           terraform init -no-color
+
+      - name: Select Terraform Workspace
+        working-directory: ./infra
+        run: |
+          echo "🔍 Listing existing workspaces..."
+          terraform workspace list
+          
+          echo "📋 Selecting workspace: ${{ inputs.workspace }}"
+          terraform workspace select ${{ inputs.workspace }} || terraform workspace new ${{ inputs.workspace }}
+          
+          echo "✅ Current workspace:"
+          terraform workspace show
 
       - name: Terraform Validate
         id: validate
@@ -115,3 +139,18 @@ jobs:
       - name: Terraform Plan Status
         if: steps.plan.outcome == 'failure'
         run: exit 1
+
+      - name: Terraform Apply
+        id: apply
+        if: inputs.auto_apply == true
+        env:
+          TF_VAR_lambda_s3_bucket: ${{ inputs.lambda_s3_bucket }}
+          TF_VAR_lambda_s3_key: ${{ inputs.lambda_s3_key }}
+          TF_VAR_datadog_api_key: ${{ secrets.DD_API_KEY }}
+          TF_VAR_aws_region: ${{ inputs.aws_region }}
+        run: |
+          if [ -n "${{ inputs.tfvars_file }}" ]; then
+            terraform apply -auto-approve -input=false -var-file=${{ inputs.tfvars_file }}
+          else
+            terraform apply -auto-approve -input=false
+          fi

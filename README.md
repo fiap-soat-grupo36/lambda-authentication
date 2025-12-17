@@ -40,7 +40,29 @@ O projeto segue uma arquitetura serverless com os seguintes componentes principa
 
 ## 🚀 Infraestrutura
 
-A infraestrutura é totalmente gerenciada via Terraform e provisiona os seguintes recursos na AWS:
+A infraestrutura é totalmente gerenciada via Terraform utilizando **Workspaces** para separar ambientes (dev/prod). Cada workspace mantém seu próprio state file isolado no S3.
+
+### 🔄 Terraform Workspaces
+
+Este projeto utiliza Terraform Workspaces para gerenciar ambientes:
+- **Workspace `dev`**: Ambiente de desenvolvimento (branch `develop`)
+- **Workspace `prod`**: Ambiente de produção (branch `main`)
+
+**📖 [Guia Completo de Workspaces](docs/TERRAFORM_WORKSPACES.md)**
+
+### Uso Rápido
+
+```bash
+# Desenvolvimento (branch develop)
+./scripts/terraform_workspace.sh dev plan
+./scripts/terraform_workspace.sh dev apply
+
+# Produção (branch main)  
+./scripts/terraform_workspace.sh prod plan
+./scripts/terraform_workspace.sh prod apply
+```
+
+A infraestrutura provisiona os seguintes recursos na AWS:
 
 ### Recursos AWS
 

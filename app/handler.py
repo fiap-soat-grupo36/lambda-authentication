@@ -1,31 +1,58 @@
-import time
-from ddtrace import tracer
-from datadog_lambda.metric import lambda_metric
+import json
+from logging import Logger
 
-def lambda_handler(event, context):
-    # add custom tags to the lambda function span,
-    # does NOT work when X-Ray tracing is enabled
-    current_span = tracer.current_span()
-    if current_span:
-        current_span.set_tag('customer.id', '123456')
+from src.exception.validacoes_exception import (
+    CPFInvalidoError,
+    ClienteNaoEncontradoError,
+    ClienteInativoError,
+)
+from src.service.auth_service import AuthService
+from src.utils.conexao_db import GerenciadorDB
+from src.utils.config import AppConfig
+from datadog import datadog_lambda_wrapper
 
-    # submit a custom span
-    with tracer.trace("hello.world"):
-        print('Hello, World!')
-
-    # submit a custom metric
-    lambda_metric(
-        metric_name='coffee_house.order_value',
-        value=12.45,
-        tags=['product:latte', 'order:online']
+try:
+    GerenciadorDB.inicializar(
+        secret_name=AppConfig.DB_SECRET_NAME, region=AppConfig.AWS_REGION
     )
+except Exception as e:
+    print(f'Aviso: Falha na inicialização do DB no Cold Start: {e}')
 
+
+@datadog_lambda_wrapper
+def lambda_handler(event, context):
+    try:
+        body = json.loads(event.get('body', '{}'))
+        cpf = body.get('cpf')
+
+        if not cpf:
+            return _resposta(400, {'erro': 'CPF é obrigatório.'})
+
+        resultado = AuthService.autenticar_cliente(
+            cpf=cpf,
+            secret_name_jwt=AppConfig.JWT_SECRET_NAME,
+            region=AppConfig.AWS_REGION,
+        )
+
+        return _resposta(200, resultado)
+
+    except CPFInvalidoError as e:
+        return _resposta(400, {'erro': str(e)})
+
+    except ClienteNaoEncontradoError as e:
+        return _resposta(404, {'erro': str(e)})
+
+    except ClienteInativoError as e:
+        return _resposta(403, {'erro': str(e)})
+
+    except Exception as e:
+        Logger(f'Erro inesperado: {str(e)}')
+        return _resposta(500, {'erro': 'Erro interno no servidor.'})
+
+
+def _resposta(status, body):
     return {
-        'statusCode': 200,
-        'body': get_message()
+        'statusCode': status,
+        'headers': {'Content-Type': 'application/json'},
+        'body': json.dumps(body),
     }
-
-# trace a function
-@tracer.wrap()
-def get_message():
-    return 'Hello from serverless!'
