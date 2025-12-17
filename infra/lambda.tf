@@ -1,9 +1,6 @@
 # Workspace será usado para alternar entre dev e prod
 # Use: terraform workspace select dev/prod
-locals {
-  workspace = terraform.workspace
-  environment = terraform.workspace == "default" ? "dev" : terraform.workspace
-}
+
 
 # Security Group para Lambda
 resource "aws_security_group" "lambda_sg" {

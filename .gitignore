@@ -33,3 +33,4 @@ terraform.rc
 .pytest_cache
 __pycache__
 .idea
+.terraform.lock.hcl
