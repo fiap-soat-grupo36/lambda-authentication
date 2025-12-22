@@ -5,6 +5,7 @@ datadog
 datadog-lambda
 ddtrace
 boto3
-psycopg2-pool
+psycopg2-binary
 PyJWT
 sqlalchemy
+python-json-logger
