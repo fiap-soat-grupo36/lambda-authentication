@@ -26,9 +26,3 @@ variable "db_secret_name" {
   sensitive   = true
   default     = ""
 }
-
-variable "jwt_secret_key" {
-  description = "JWT Secret Key para assinatura de tokens (passar diretamente como string)"
-  type        = string
-  sensitive   = true
-}
