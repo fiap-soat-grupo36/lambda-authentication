@@ -36,6 +36,8 @@ module "lambda-datadog" {
     "DD_SERVICE" : "fiap-auth-lambda-${local.environment}"
     "DD_SITE": "us5.datadoghq.com"
     "DD_TRACE_ENABLED" : "true"
+    "DD_LOGS_INJECTION" : "true"
+    "DD_CAPTURE_LAMBDA_PAYLOAD" : "true"
     "DB_SECRET_NAME" : data.aws_secretsmanager_secret.db_password.name
     "JWT_SECRET_KEY" : random_password.jwt_secret.result
   }
