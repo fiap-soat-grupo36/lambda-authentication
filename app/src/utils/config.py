@@ -7,9 +7,10 @@ from src.utils.log import DatadogLogConfig
 class AppConfig:
     DB_SECRET_NAME = os.environ.get('DB_SECRET_NAME')
     JWT_SECRET_NAME = os.environ.get('JWT_SECRET_NAME')
-    AWS_REGION = os.environ.get('AWS_REGION', 'sa-east-1')
-    SERVICE_NAME = os.environ.get('DD_SERVICE', 'fiap-auth-lambda')
+    AWS_REGION = os.environ.get('AWS_REGION', 'us-east-2')
     ENVIRONMENT = os.environ.get('DD_ENV', 'dev')
+    SERVICE_NAME = os.environ.get('DD_SERVICE', f'fiap-auth-lambda-{ENVIRONMENT}')
+    
 
 
 _log_config = DatadogLogConfig(
