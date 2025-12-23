@@ -39,11 +39,7 @@ def lambda_handler(event, context):
             'Iniciando autenticação', extra={'cpf_masked': cpf[:3] + '***'}
         )
 
-        resultado = AuthService.autenticar_cliente(
-            cpf=cpf,
-            secret_name_jwt=AppConfig.JWT_SECRET_NAME,
-            region=AppConfig.AWS_REGION,
-        )
+        resultado = AuthService.autenticar_cliente(cpf=cpf)
 
         logger.info('Autenticação bem-sucedida')
         return _resposta(200, resultado)

@@ -33,7 +33,7 @@ module "lambda-datadog" {
     "DD_SITE": "us5.datadoghq.com"
     "DD_TRACE_ENABLED" : "true"
     "DB_SECRET_NAME" : data.aws_secretsmanager_secret.db_password.name
-    "JWT_SECRET_NAME" : var.jwt_secret_name
+    "JWT_SECRET_KEY" : var.jwt_secret_key
   }
 
   datadog_extension_layer_version = 86

@@ -27,9 +27,8 @@ variable "db_secret_name" {
   default     = ""
 }
 
-variable "jwt_secret_name" {
-  description = "Secrets Manager secret name or ARN for JWT secret (populate in CI or a secure tfvars)"
+variable "jwt_secret_key" {
+  description = "JWT Secret Key para assinatura de tokens (passar diretamente como string)"
   type        = string
   sensitive   = true
-  default     = ""
 }
