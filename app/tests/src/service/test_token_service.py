@@ -30,7 +30,7 @@ class TestGeradorTokenJWT:
             nome='Teste',
             ativo=True,
             secret_name='prod/secret',
-            region='us-east-1',
+            region='us-east-2',
         )
 
         assert isinstance(token, str)
