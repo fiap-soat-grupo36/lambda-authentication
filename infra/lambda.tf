@@ -39,6 +39,9 @@ module "lambda-datadog" {
     "DD_LOGS_INJECTION" : "true"
     "DD_CAPTURE_LAMBDA_PAYLOAD" : "true"
     "DB_SECRET_NAME" : data.aws_secretsmanager_secret.db_password.name
+    "DB_HOST" : data.aws_db_instance.main.address
+    "DB_PORT" : tostring(data.aws_db_instance.main.port)
+    "DB_NAME" : var.db_name
     "JWT_SECRET_KEY" : random_password.jwt_secret.result
   }
 

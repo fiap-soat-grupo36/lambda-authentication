@@ -29,7 +29,7 @@ class GerenciadorDB:
         return json.loads(resposta['SecretString'])
 
     @classmethod
-    def inicializar(cls, secret_name: str, region: str):
+    def inicializar(cls, secret_name: str, region: str, db_host: str = None, db_port: str = None, db_name: str = None):
 
         if cls._engine is not None:
             logger.debug(
@@ -39,6 +39,15 @@ class GerenciadorDB:
 
         logger.info('Inicializando conexão com o banco de dados')
         creds = cls._carregar_credenciais(secret_name, region)
+        
+        # Adiciona informações de host, port e database nas credenciais
+        if db_host:
+            creds['host'] = db_host
+        if db_port:
+            creds['port'] = int(db_port)
+        if db_name:
+            creds['dbname'] = db_name
+            
         db_url = cls.montar_db_url(creds)
 
         logger.debug('Criando engine do SQLAlchemy')
@@ -92,10 +101,37 @@ class GerenciadorDB:
             logger.debug('Sessão do banco de dados fechada')
 
     def montar_db_url(creds: dict) -> str:
+        """
+        Monta a URL de conexão do banco de dados.
+        Suporta diferentes formatos de secrets do RDS/Secrets Manager.
+        """
+        # Aceita diferentes nomes de chaves
+        host = creds.get('host') or creds.get('hostname') or creds.get('endpoint')
+        port = creds.get('port', 5432)
+        username = creds.get('username') or creds.get('user')
+        password = creds.get('password')
+        database = creds.get('dbname') or creds.get('database') or creds.get('db')
+        
+        # Validação
+        if not all([host, username, password, database]):
+            missing = []
+            if not host: missing.append('host/hostname/endpoint')
+            if not username: missing.append('username/user')
+            if not password: missing.append('password')
+            if not database: missing.append('dbname/database/db')
+            
+            logger.error(
+                f'Secret do banco de dados está incompleto. Chaves faltando: {", ".join(missing)}',
+                extra={'available_keys': list(creds.keys())}
+            )
+            raise ValueError(
+                f'Secret do banco de dados inválido. Chaves disponíveis: {list(creds.keys())}'
+            )
+        
         return (
-            f"postgresql+psycopg2://{creds['username']}:"
-            f"{creds['password']}@"
-            f"{creds['host']}:"
-            f"{creds.get('port', 5432)}/"
-            f"{creds['dbname']}"
+            f"postgresql+psycopg2://{username}:"
+            f"{password}@"
+            f"{host}:"
+            f"{port}/"
+            f"{database}"
         )
