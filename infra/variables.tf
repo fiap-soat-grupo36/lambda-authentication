@@ -26,10 +26,3 @@ variable "db_secret_name" {
   sensitive   = true
   default     = ""
 }
-
-variable "jwt_secret_name" {
-  description = "Secrets Manager secret name or ARN for JWT secret (populate in CI or a secure tfvars)"
-  type        = string
-  sensitive   = true
-  default     = ""
-}

@@ -1,11 +1,15 @@
+# Gera uma chave aleatória e segura para JWT
+resource "random_password" "jwt_secret" {
+  length  = 64
+  special = true
+  override_special = "!@#$%^&*()_+-=[]{}|;:,.<>?"
+}
+
 resource "aws_security_group" "lambda_sg" {
   name        = "fiap-auth-lambda-sg-${local.environment}"
   description = "Security group para Lambda de autenticacao"
   vpc_id      = data.aws_vpc.main.id
 
-  # Ingress: permitir tráfego necessário (se RDS precisar aceitar conexões desta Lambda)
-  # Nota: Normalmente o RDS tem seu próprio security group que permite ingress da Lambda
-  
   egress {
     from_port   = 0
     to_port     = 0
@@ -33,8 +37,7 @@ module "lambda-datadog" {
     "DD_SITE": "us5.datadoghq.com"
     "DD_TRACE_ENABLED" : "true"
     "DB_SECRET_NAME" : data.aws_secretsmanager_secret.db_password.name
-    "JWT_SECRET_NAME" : var.jwt_secret_name
-    "AWS_REGION" : var.aws_region
+    "JWT_SECRET_KEY" : random_password.jwt_secret.result
   }
 
   datadog_extension_layer_version = 86

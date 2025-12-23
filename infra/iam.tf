@@ -15,7 +15,7 @@ resource "aws_iam_role_policy_attachment" "lambda_vpc_execution" {
 
 resource "aws_iam_policy" "secrets_manager_policy" {
   name        = "fiap-lambda-secrets-manager-${local.environment}"
-  description = "Permite Lambda ler secrets do Secrets Manager"
+  description = "Permite Lambda ler secrets do Secrets Manager (apenas DB credentials)"
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -27,8 +27,7 @@ resource "aws_iam_policy" "secrets_manager_policy" {
           "secretsmanager:DescribeSecret"
         ]
         Resource = [
-          "arn:aws:secretsmanager:${var.aws_region}:*:secret:${var.db_secret_name}*",
-          "arn:aws:secretsmanager:${var.aws_region}:*:secret:${var.jwt_secret_name}*"
+          "arn:aws:secretsmanager:${var.aws_region}:*:secret:${var.db_secret_name}*"
         ]
       }
     ]

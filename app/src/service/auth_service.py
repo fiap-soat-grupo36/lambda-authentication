@@ -11,8 +11,6 @@ class AuthService:
     @staticmethod
     def autenticar_cliente(
         cpf: str,
-        secret_name_jwt: str,
-        region: str,
         expira_em_minutos: int = 30,
     ) -> Dict[str, str]:
         logger.debug('Validando CPF')
@@ -35,8 +33,6 @@ class AuthService:
             cliente_id=str(cliente.id),
             nome=cliente.nome,
             ativo=cliente.ativo,
-            secret_name=secret_name_jwt,
-            region=region,
             expira_em_minutos=expira_em_minutos,
         )
 
