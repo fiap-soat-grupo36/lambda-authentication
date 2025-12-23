@@ -27,7 +27,7 @@ class TestAppConfig:
         importlib.reload(config_module)
 
         assert config_module.AppConfig.DB_SECRET_NAME == 'Apenas_DB'
-        assert config_module.AppConfig.AWS_REGION == 'sa-east-1'
+        assert config_module.AppConfig.AWS_REGION == 'us-west-2'
 
 
 @patch('src.utils.conexao_db.GerenciadorDB')
@@ -52,5 +52,5 @@ def test_inicializar_aplicacao_chama_db_inicializar(mock_gerenciador_db):
 
         # Verifica os parâmetros
         mock_gerenciador_db.inicializar.assert_called_with(
-            secret_name='db_prod', region='us-east-1'
+            secret_name='db_prod', region='us-west-2'
         )
