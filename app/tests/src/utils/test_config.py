@@ -9,7 +9,7 @@ class TestAppConfig:
         'os.environ',
         {
             'DB_SECRET_NAME': 'test/db/secret',
-            'JWT_SECRET_NAME': 'test/jwt/secret',
+            'JWT_SECRET_KEY': 'test-jwt-secret-key',
             'AWS_REGION': 'us-east-2',
         },
         clear=True,
@@ -19,7 +19,7 @@ class TestAppConfig:
 
         # Acessamos a classe através do módulo recarregado
         assert config_module.AppConfig.DB_SECRET_NAME == 'test/db/secret'
-        assert config_module.AppConfig.JWT_SECRET_NAME == 'test/jwt/secret'
+        assert config_module.AppConfig.JWT_SECRET_KEY == 'test-jwt-secret-key'
         assert config_module.AppConfig.AWS_REGION == 'us-east-2'
 
     @patch.dict('os.environ', {'DB_SECRET_NAME': 'Apenas_DB'}, clear=True)
