@@ -26,3 +26,9 @@ variable "db_secret_name" {
   sensitive   = true
   default     = ""
 }
+
+variable "db_name" {
+  description = "Nome do database no RDS"
+  type        = string
+  default     = "oficina"
+}
