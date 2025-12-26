@@ -28,9 +28,7 @@ class TestAuthService:
         mock_jwt.gerar_token.return_value = token_fake
 
         # Execução
-        resposta = AuthService.autenticar_cliente(
-            cpf_input, 'secret', 'region'
-        )
+        resposta = AuthService.autenticar_cliente(cpf_input)
 
         # Asserções
         assert resposta['access_token'] == token_fake
@@ -51,6 +49,6 @@ class TestAuthService:
         mock_repo.buscar_por_cpf.return_value = cliente_inativo
 
         with pytest.raises(ClienteInativoError) as exc_info:
-            AuthService.autenticar_cliente('123', 's', 'r')
+            AuthService.autenticar_cliente('123')
 
         assert 'Cliente está inativo' in str(exc_info.value)

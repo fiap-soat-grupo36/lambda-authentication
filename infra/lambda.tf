@@ -1,14 +1,15 @@
-# Workspace será usado para alternar entre dev e prod
-# Use: terraform workspace select dev/prod
+# Gera uma chave aleatória e segura para JWT
+resource "random_password" "jwt_secret" {
+  length  = 64
+  special = true
+  override_special = "!@#$%^&*()_+-=[]{}|;:,.<>?"
+}
 
-
-# Security Group para Lambda
 resource "aws_security_group" "lambda_sg" {
   name        = "fiap-auth-lambda-sg-${local.environment}"
   description = "Security group para Lambda de autenticacao"
   vpc_id      = data.aws_vpc.main.id
 
-  # Egress: permitir todo tráfego de saída (necessário para acessar internet, Datadog, RDS, etc)
   egress {
     from_port   = 0
     to_port     = 0
@@ -35,6 +36,10 @@ module "lambda-datadog" {
     "DD_SERVICE" : "fiap-auth-lambda-${local.environment}"
     "DD_SITE": "us5.datadoghq.com"
     "DD_TRACE_ENABLED" : "true"
+    "DD_LOGS_INJECTION" : "true"
+    "DD_CAPTURE_LAMBDA_PAYLOAD" : "true"
+    "DB_SECRET_NAME" : data.aws_secretsmanager_secret.db_password.name
+    "JWT_SECRET_KEY" : random_password.jwt_secret.result
   }
 
   datadog_extension_layer_version = 86
@@ -50,7 +55,6 @@ module "lambda-datadog" {
   timeout     = 10
   memory_size = 128
 
-  # VPC Configuration
   vpc_config_subnet_ids         = toset(data.aws_subnets.private.ids)
   vpc_config_security_group_ids = toset([aws_security_group.lambda_sg.id])
 }

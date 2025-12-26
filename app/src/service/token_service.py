@@ -1,30 +1,24 @@
-import json
+import os
 from datetime import datetime, timedelta
 from typing import Dict, Any
 
-import boto3
 import jwt
+from src.utils.config import logger
 
 
 class GeradorTokenJWT:
-    _segredo_cache: str | None = None
-
+    
     @staticmethod
-    def _carregar_segredo(secret_name: str, region: str) -> str:
-
-        if GeradorTokenJWT._segredo_cache:
-            return GeradorTokenJWT._segredo_cache
-
-        cliente = boto3.client('secretsmanager', region_name=region)
-        resposta = cliente.get_secret_value(SecretId=secret_name)
-
-        dados = json.loads(resposta['SecretString'])
-        segredo = dados.get('jwt_secret')
-
+    def _obter_segredo() -> str:
+        """Obtém o secret do JWT da variável de ambiente."""
+        segredo = os.environ.get('JWT_SECRET_KEY')
+        
         if not segredo:
-            raise RuntimeError("Chave 'jwt_secret' não encontrada no Secret.")
-
-        GeradorTokenJWT._segredo_cache = segredo
+            logger.error('JWT_SECRET_KEY não configurada')
+            raise RuntimeError(
+                "Variável de ambiente 'JWT_SECRET_KEY' não configurada."
+            )
+        
         return segredo
 
     @staticmethod
@@ -33,12 +27,12 @@ class GeradorTokenJWT:
         cliente_id: str,
         nome: str,
         ativo: bool,
-        secret_name: str,
-        region: str,
         expira_em_minutos: int = 30,
     ) -> str:
-
-        segredo = GeradorTokenJWT._carregar_segredo(secret_name, region)
+        """Gera um token JWT com as informações do cliente."""
+        
+        logger.debug('Obtendo secret para geração do token')
+        segredo = GeradorTokenJWT._obter_segredo()
 
         agora = datetime.utcnow()
         expira = agora + timedelta(minutes=expira_em_minutos)
@@ -52,24 +46,36 @@ class GeradorTokenJWT:
             'exp': int(expira.timestamp()),
         }
 
+        logger.debug('Codificando token JWT')
         token = jwt.encode(payload, segredo, algorithm='HS256')
 
         if isinstance(token, bytes):
             token = token.decode('utf-8')
 
+        logger.debug('Token JWT gerado com sucesso')
         return token
 
     @staticmethod
     def validar_token(
-        token: str, secret_name: str, region: str, algoritmo: str = 'HS256'
+        token: str, algoritmo: str = 'HS256'
     ) -> Dict[str, Any]:
+        """Valida e decodifica um token JWT."""
+        
+        logger.debug('Validando token JWT')
+        segredo = GeradorTokenJWT._obter_segredo()
 
-        segredo = GeradorTokenJWT._carregar_segredo(secret_name, region)
-
-        payload = jwt.decode(
-            token,
-            segredo,
-            algorithms=[algoritmo],
-            options={'verify_iat': False},
-        )
-        return payload
+        try:
+            payload = jwt.decode(
+                token,
+                segredo,
+                algorithms=[algoritmo],
+                options={'verify_iat': False},
+            )
+            logger.debug('Token validado com sucesso')
+            return payload
+        except jwt.ExpiredSignatureError:
+            logger.warning('Token expirado')
+            raise
+        except jwt.InvalidTokenError as e:
+            logger.warning('Token inválido', extra={'error': str(e)})
+            raise
