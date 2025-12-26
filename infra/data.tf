@@ -28,11 +28,6 @@ data "aws_iam_policy_document" "lambda_assume_role" {
   }
 }
 
-# Busca informações do RDS existente
-data "aws_db_instance" "main" {
-  db_instance_identifier = "fiap-rds"
-}
-
 data "aws_rds_cluster" "cluster" {
   cluster_identifier = "fiap-rds"
 }
