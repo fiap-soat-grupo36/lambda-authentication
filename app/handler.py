@@ -12,7 +12,11 @@ from datadog import datadog_lambda_wrapper
 
 try:
     GerenciadorDB.inicializar(
-        secret_name=AppConfig.DB_SECRET_NAME, region=AppConfig.AWS_REGION
+        secret_name=AppConfig.DB_SECRET_NAME,
+        region=AppConfig.AWS_REGION,
+        db_host=AppConfig.DB_HOST,
+        db_port=AppConfig.DB_PORT,
+        db_name=AppConfig.DB_NAME
     )
     logger.info('Database inicializado com sucesso no Cold Start')
 except Exception as e:
