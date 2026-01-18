@@ -66,3 +66,9 @@ data "aws_secretsmanager_secret" "jwt_secret" {
 data "aws_secretsmanager_secret_version" "jwt_secret" {
   secret_id = data.aws_secretsmanager_secret.jwt_secret.id
 }
+
+# Secret com credenciais do banco usando usuario app_admin
+# Usa o secret existente lambda-db-credentials em vez do master user do RDS
+data "aws_secretsmanager_secret" "lambda_db_credentials" {
+  name = "lambda-db-credentials"
+}

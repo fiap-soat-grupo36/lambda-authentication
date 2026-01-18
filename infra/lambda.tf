@@ -37,7 +37,9 @@ module "lambda-datadog" {
     "DD_TRACE_ENABLED" : "true"
     "DD_LOGS_INJECTION" : "true"
     "DD_CAPTURE_LAMBDA_PAYLOAD" : "true"
-    "DB_SECRET_NAME" : data.aws_secretsmanager_secret.db_password.name
+    # Usa o secret lambda-db-credentials com usuario app_admin
+    # em vez do master user do RDS para acesso ao schema correto
+    "DB_SECRET_NAME" : data.aws_secretsmanager_secret.lambda_db_credentials.name
     "DB_HOST" : data.aws_rds_cluster.cluster.endpoint
     "DB_PORT" : tostring(data.aws_rds_cluster.cluster.port)
     "DB_NAME" : var.db_name
