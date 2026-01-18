@@ -33,7 +33,11 @@ class TestGeradorTokenJWT:
 
         # Valida o token
         payload = GeradorTokenJWT.validar_token(token)
-        
+
+        # Campos de compatibilidade com microservices Java
+        assert payload['sub'] == '12345678901'
+        assert payload['roles'] == ['CLIENTE']
+        # Campos customizados
         assert payload['cpf'] == '12345678901'
         assert payload['cliente_id'] == '1'
         assert payload['nome'] == 'Teste'

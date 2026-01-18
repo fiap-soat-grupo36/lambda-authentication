@@ -45,6 +45,14 @@ data "aws_security_group" "database" {
     name   = "tag:Name"
     values = ["fiap-rds-sg"]
   }
-  
+
   vpc_id = data.aws_vpc.main.id
+}
+
+data "aws_secretsmanager_secret" "jwt_secret" {
+  name = var.jwt_secret_name
+}
+
+data "aws_secretsmanager_secret_version" "jwt_secret" {
+  secret_id = data.aws_secretsmanager_secret.jwt_secret.id
 }

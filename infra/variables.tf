@@ -32,3 +32,9 @@ variable "db_name" {
   type        = string
   default     = "oficina"
 }
+
+variable "jwt_secret_name" {
+  description = "Nome do secret no AWS Secrets Manager que contem a chave JWT (mesmo usado pelos microservices)"
+  type        = string
+  default     = "jwt_secret"
+}

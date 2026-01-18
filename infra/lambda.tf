@@ -1,8 +1,7 @@
-# Gera uma chave aleatória e segura para JWT
-resource "random_password" "jwt_secret" {
-  length  = 64
-  special = true
-  override_special = "!@#$%^&*()_+-=[]{}|;:,.<>?"
+# JWT Secret lido do AWS Secrets Manager (mesmo secret usado pelos microservices no EKS)
+# Isso garante que tokens gerados pela Lambda sejam validados pelos microservices
+locals {
+  jwt_secret = data.aws_secretsmanager_secret_version.jwt_secret.secret_string
 }
 
 resource "aws_security_group" "lambda_sg" {
@@ -34,7 +33,7 @@ module "lambda-datadog" {
     "DD_API_KEY" : var.datadog_api_key
     "DD_ENV" : local.environment
     "DD_SERVICE" : "fiap-auth-lambda-${local.environment}"
-    "DD_SITE": "us5.datadoghq.com"
+    "DD_SITE" : "us5.datadoghq.com"
     "DD_TRACE_ENABLED" : "true"
     "DD_LOGS_INJECTION" : "true"
     "DD_CAPTURE_LAMBDA_PAYLOAD" : "true"
@@ -42,11 +41,11 @@ module "lambda-datadog" {
     "DB_HOST" : data.aws_rds_cluster.cluster.endpoint
     "DB_PORT" : tostring(data.aws_rds_cluster.cluster.port)
     "DB_NAME" : var.db_name
-    "JWT_SECRET_KEY" : random_password.jwt_secret.result
+    "JWT_SECRET_KEY" : local.jwt_secret
   }
 
   datadog_extension_layer_version = 86
-  datadog_python_layer_version = 119
+  datadog_python_layer_version    = 119
 
   s3_bucket     = var.lambda_s3_bucket
   s3_key        = var.lambda_s3_key

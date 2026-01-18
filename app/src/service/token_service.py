@@ -38,6 +38,8 @@ class GeradorTokenJWT:
         expira = agora + timedelta(minutes=expira_em_minutos)
 
         payload = {
+            'sub': cpf,
+            'roles': ['CLIENTE'],
             'cpf': cpf,
             'cliente_id': cliente_id,
             'nome': nome,

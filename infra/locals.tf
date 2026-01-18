@@ -1,4 +1,4 @@
 locals {
-  workspace = terraform.workspace
+  workspace   = terraform.workspace
   environment = terraform.workspace == "default" ? "dev" : terraform.workspace
 }
