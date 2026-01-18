@@ -1,54 +1,40 @@
+##################################################################
+################### INTEGRAÇÃO HTTP API v2 #######################
+##################################################################
 
-# Data Source - API Gateway existente
-data "aws_api_gateway_rest_api" "oficina_api" {
-  name = "oficina-api"
+# Usa o API Gateway ID do remote state do infra-kubernetes
+locals {
+  api_gateway_id = data.terraform_remote_state.infra.outputs.api_gateway_id
 }
 
-# Recursos (/auth/login)
-
-resource "aws_api_gateway_resource" "auth" {
-  rest_api_id = data.aws_api_gateway_rest_api.oficina_api.id
-  parent_id   = data.aws_api_gateway_rest_api.oficina_api.root_resource_id
-  path_part   = "auth"
+# Data Source - HTTP API v2 existente (criado pelo infra-kubernetes)
+data "aws_apigatewayv2_api" "oficina_api" {
+  api_id = local.api_gateway_id
 }
 
-resource "aws_api_gateway_resource" "login" {
-  rest_api_id = data.aws_api_gateway_rest_api.oficina_api.id
-  parent_id   = aws_api_gateway_resource.auth.id
-  path_part   = "login"
+# Integração Lambda com HTTP API v2
+resource "aws_apigatewayv2_integration" "auth_lambda" {
+  api_id                 = data.aws_apigatewayv2_api.oficina_api.id
+  integration_type       = "AWS_PROXY"
+  integration_uri        = module.lambda-datadog.invoke_arn
+  integration_method     = "POST"
+  payload_format_version = "2.0"
+  timeout_milliseconds   = 10000
 }
 
-
-# POST
-
-resource "aws_api_gateway_method" "login_post" {
-  rest_api_id   = data.aws_api_gateway_rest_api.oficina_api.id
-  resource_id   = aws_api_gateway_resource.login.id
-  http_method   = "POST"
-  authorization = "NONE"
+# Rota POST /auth/cpf -> Lambda (autenticação de clientes via CPF)
+# Nota: /auth/login continua disponível no auth-service para login com username/password
+resource "aws_apigatewayv2_route" "auth_cpf" {
+  api_id    = data.aws_apigatewayv2_api.oficina_api.id
+  route_key = "POST /auth/cpf"
+  target    = "integrations/${aws_apigatewayv2_integration.auth_lambda.id}"
 }
 
-
-# Integração Lambda
-
-resource "aws_api_gateway_integration" "login_lambda" {
-  rest_api_id = data.aws_api_gateway_rest_api.oficina_api.id
-  resource_id = aws_api_gateway_resource.login.id
-  http_method = aws_api_gateway_method.login_post.http_method
-
-  integration_http_method = "POST"
-  type                    = "AWS_PROXY"
-  uri                     = module.lambda-datadog.invoke_arn
-}
-
-
-# Permissão Lambda
-
+# Permissão para API Gateway invocar a Lambda
 resource "aws_lambda_permission" "apigw_invoke_auth" {
   statement_id  = "AllowAPIGatewayInvokeAuth"
   action        = "lambda:InvokeFunction"
   function_name = module.lambda-datadog.function_name
   principal     = "apigateway.amazonaws.com"
-
-  source_arn = "${data.aws_api_gateway_rest_api.oficina_api.execution_arn}/*/*"
+  source_arn    = "${data.aws_apigatewayv2_api.oficina_api.execution_arn}/*/*"
 }
