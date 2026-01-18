@@ -1,3 +1,13 @@
+# Remote state do infra-kubernetes para obter recursos compartilhados
+data "terraform_remote_state" "infra" {
+  backend = "s3"
+  config = {
+    bucket = "projeto-oficina-terraform"
+    key    = "infra/terraform.tfstate"
+    region = "us-east-2"
+  }
+}
+
 data "aws_vpc" "main" {
   filter {
     name   = "tag:Name"

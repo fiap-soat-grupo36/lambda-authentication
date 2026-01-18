@@ -38,3 +38,4 @@ variable "jwt_secret_name" {
   type        = string
   default     = "jwt_secret"
 }
+
