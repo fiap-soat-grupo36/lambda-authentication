@@ -2,14 +2,15 @@
 ################### INTEGRAÇÃO HTTP API v2 #######################
 ##################################################################
 
-# Usa o API Gateway ID do remote state do infra-kubernetes
-locals {
-  api_gateway_id = data.terraform_remote_state.infra.outputs.api_gateway_id
+# Data Source - HTTP API v2 existente (busca pelo nome)
+data "aws_apigatewayv2_apis" "oficina_api" {
+  name          = "oficina-microservices-http-api-${local.environment}"
+  protocol_type = "HTTP"
 }
 
-# Data Source - HTTP API v2 existente (criado pelo infra-kubernetes)
+# Busca detalhes do API Gateway encontrado
 data "aws_apigatewayv2_api" "oficina_api" {
-  api_id = local.api_gateway_id
+  api_id = tolist(data.aws_apigatewayv2_apis.oficina_api.ids)[0]
 }
 
 # Integração Lambda com HTTP API v2
