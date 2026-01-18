@@ -34,3 +34,4 @@ terraform.rc
 __pycache__
 .idea
 .terraform.lock.hcl
+infra/.terraform.lock.hcl
