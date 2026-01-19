@@ -1,5 +1,7 @@
 import json
 
+from datadog import datadog_lambda_wrapper
+
 from src.exception.validacoes_exception import (
     CPFInvalidoError,
     ClienteNaoEncontradoError,
@@ -8,7 +10,6 @@ from src.exception.validacoes_exception import (
 from src.service.auth_service import AuthService
 from src.utils.conexao_db import GerenciadorDB
 from src.utils.config import AppConfig, logger
-from datadog import datadog_lambda_wrapper
 
 try:
     GerenciadorDB.inicializar(
@@ -16,7 +17,7 @@ try:
         region=AppConfig.AWS_REGION,
         db_host=AppConfig.DB_HOST,
         db_port=AppConfig.DB_PORT,
-        db_name=AppConfig.DB_NAME
+        db_name=AppConfig.DB_NAME,
     )
     logger.info('Database inicializado com sucesso no Cold Start')
 except Exception as e:
@@ -65,6 +66,8 @@ def lambda_handler(event, context):
             'Erro inesperado na lambda', exc_info=True, extra={'error': str(e)}
         )
         return _resposta(500, {'erro': 'Erro interno no servidor.'})
+    finally:
+        GerenciadorDB.dispose_engine()
 
 
 def _resposta(status, body):

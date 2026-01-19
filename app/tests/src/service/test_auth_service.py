@@ -3,7 +3,6 @@ from unittest.mock import patch
 import pytest
 
 from src.exception.validacoes_exception import ClienteInativoError
-from src.model.cliente import ClienteModel
 from src.service.auth_service import AuthService
 
 
@@ -12,7 +11,7 @@ class TestAuthService:
     @patch('src.service.auth_service.ClientRepository')
     @patch('src.service.auth_service.ValidadorCPFService')
     def test_autenticar_cliente_fluxo_completo(
-            self, mock_validador, mock_repo, mock_jwt
+        self, mock_validador, mock_repo, mock_jwt
     ):
         # 1. Mock Validador
         cpf_input = '123'

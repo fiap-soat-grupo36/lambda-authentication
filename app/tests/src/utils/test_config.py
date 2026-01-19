@@ -59,5 +59,5 @@ def test_inicializar_aplicacao_chama_db_inicializar(mock_gerenciador_db):
             region='us-east-2',
             db_host='test-host.rds.amazonaws.com',
             db_port='5432',
-            db_name='testdb'
+            db_name='testdb',
         )
