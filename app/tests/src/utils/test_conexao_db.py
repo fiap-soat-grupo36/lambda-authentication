@@ -2,6 +2,7 @@ import pytest
 from unittest.mock import patch, MagicMock, call
 from app.src.utils.conexao_db import GerenciadorDB
 
+
 @pytest.fixture(autouse=True)
 def reset_gerenciador():
     """Reset GerenciadorDB state before each test."""
@@ -30,12 +31,17 @@ def test_inicializar_success(mock_create_engine, mock_boto_client):
 
     assert GerenciadorDB._engine is not None
     assert GerenciadorDB._session_factory is not None
-    assert 'postgresql://user:pass@localhost:5432/mydb' == GerenciadorDB._database_url
+    assert (
+        'postgresql://user:pass@localhost:5432/mydb'
+        == GerenciadorDB._database_url
+    )
 
 
 @patch('app.src.utils.conexao_db.boto3.client')
 @patch('app.src.utils.conexao_db.create_engine')
-def test_inicializar_disposes_existing_engine(mock_create_engine, mock_boto_client):
+def test_inicializar_disposes_existing_engine(
+    mock_create_engine, mock_boto_client
+):
     """Test that initialization disposes existing engine."""
     mock_secrets_client = MagicMock()
     mock_boto_client.return_value = mock_secrets_client

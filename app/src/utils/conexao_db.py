@@ -26,7 +26,7 @@ class GerenciadorDB:
 
         cls._database_url = (
             f"postgresql://{credentials['username']}:{credentials['password']}"
-            f"@{db_host}:{db_port}/{db_name}"
+            f'@{db_host}:{db_port}/{db_name}'
         )
 
         cls._engine = create_engine(
@@ -35,8 +35,8 @@ class GerenciadorDB:
             echo=False,
             connect_args={
                 'connect_timeout': 10,
-                'options': '-c statement_timeout=30000'
-            }
+                'options': '-c statement_timeout=30000',
+            },
         )
         cls._session_factory = sessionmaker(bind=cls._engine)
 

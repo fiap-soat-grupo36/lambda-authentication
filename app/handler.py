@@ -22,9 +22,9 @@ def lambda_handler(event, context):
             region=config.aws_region,
             db_host=config.db_host,
             db_port=config.db_port,
-            db_name=config.db_name
+            db_name=config.db_name,
         )
-        
+
         logger.info('Lambda invocada', extra={'event': event})
 
         body = json.loads(event.get('body', '{}'))
@@ -66,7 +66,9 @@ def lambda_handler(event, context):
             GerenciadorDB.dispose_engine()
             logger.debug('Conexões com banco de dados fechadas com sucesso')
         except Exception as e:
-            logger.error('Erro ao fechar conexões com banco', extra={'error': str(e)})
+            logger.error(
+                'Erro ao fechar conexões com banco', extra={'error': str(e)}
+            )
 
 
 def _resposta(status, body):

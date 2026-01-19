@@ -30,12 +30,14 @@ class TestLambdaHandler:
     @patch('handler.GerenciadorDB')
     @patch('handler.AppConfig')
     @patch('handler.AuthService')
-    def test_handler_sucesso(self, mock_auth_service, mock_app_config, mock_db, evento_base, mock_config):
-        mock_app_config.return_value = mock_config
-    @patch('handler.GerenciadorDB')
-    @patch('handler.AppConfig')
-    @patch('handler.AuthService')
-    def test_handler_sucesso(self, mock_auth_service, mock_app_config, mock_db, evento_base, mock_config):
+    def test_handler_sucesso(
+        self,
+        mock_auth_service,
+        mock_app_config,
+        mock_db,
+        evento_base,
+        mock_config,
+    ):
         mock_app_config.return_value = mock_config
         retorno_esperado = {
             'access_token': 'token.jwt.fake',
@@ -55,10 +57,9 @@ class TestLambdaHandler:
 
     @patch('handler.GerenciadorDB')
     @patch('handler.AppConfig')
-    def test_handler_erro_cpf_obrigatorio(self, mock_app_config, mock_db, mock_config):
-    @patch('handler.GerenciadorDB')
-    @patch('handler.AppConfig')
-    def test_handler_erro_cpf_obrigatorio(self, mock_app_config, mock_db, mock_config):
+    def test_handler_erro_cpf_obrigatorio(
+        self, mock_app_config, mock_db, mock_config
+    ):
         mock_app_config.return_value = mock_config
         evento = {'body': json.dumps({'outra_coisa': 'valor'})}
 
@@ -74,12 +75,14 @@ class TestLambdaHandler:
     @patch('handler.GerenciadorDB')
     @patch('handler.AppConfig')
     @patch('handler.AuthService')
-    def test_handler_erro_cpf_invalido(self, mock_auth_service, mock_app_config, mock_db, evento_base, mock_config):
-        mock_app_config.return_value = mock_config
-    @patch('handler.GerenciadorDB')
-    @patch('handler.AppConfig')
-    @patch('handler.AuthService')
-    def test_handler_erro_cpf_invalido(self, mock_auth_service, mock_app_config, mock_db, evento_base, mock_config):
+    def test_handler_erro_cpf_invalido(
+        self,
+        mock_auth_service,
+        mock_app_config,
+        mock_db,
+        evento_base,
+        mock_config,
+    ):
         mock_app_config.return_value = mock_config
         mock_auth_service.autenticar_cliente.side_effect = CPFInvalidoError(
             'CPF inválido.'
@@ -97,13 +100,12 @@ class TestLambdaHandler:
     @patch('handler.AppConfig')
     @patch('handler.AuthService')
     def test_handler_erro_cliente_nao_encontrado(
-        self, mock_auth_service, mock_app_config, mock_db, evento_base, mock_config
-    ):
-    @patch('handler.GerenciadorDB')
-    @patch('handler.AppConfig')
-    @patch('handler.AuthService')
-    def test_handler_erro_cliente_nao_encontrado(
-        self, mock_auth_service, mock_app_config, mock_db, evento_base, mock_config
+        self,
+        mock_auth_service,
+        mock_app_config,
+        mock_db,
+        evento_base,
+        mock_config,
     ):
         mock_app_config.return_value = mock_config
         mock_auth_service.autenticar_cliente.side_effect = (
@@ -123,13 +125,12 @@ class TestLambdaHandler:
     @patch('handler.AppConfig')
     @patch('handler.AuthService')
     def test_handler_erro_cliente_inativo(
-        self, mock_auth_service, mock_app_config, mock_db, evento_base, mock_config
-    ):
-    @patch('handler.GerenciadorDB')
-    @patch('handler.AppConfig')
-    @patch('handler.AuthService')
-    def test_handler_erro_cliente_inativo(
-        self, mock_auth_service, mock_app_config, mock_db, evento_base, mock_config
+        self,
+        mock_auth_service,
+        mock_app_config,
+        mock_db,
+        evento_base,
+        mock_config,
     ):
         mock_app_config.return_value = mock_config
         mock_auth_service.autenticar_cliente.side_effect = ClienteInativoError(
@@ -145,7 +146,14 @@ class TestLambdaHandler:
     @patch('handler.GerenciadorDB')
     @patch('handler.AppConfig')
     @patch('handler.AuthService')
-    def test_handler_erro_interno(self, mock_auth_service, mock_app_config, mock_db, evento_base, mock_config):
+    def test_handler_erro_interno(
+        self,
+        mock_auth_service,
+        mock_app_config,
+        mock_db,
+        evento_base,
+        mock_config,
+    ):
         mock_app_config.return_value = mock_config
         mock_auth_service.autenticar_cliente.side_effect = Exception(
             'Erro de conexão DB'
