@@ -27,7 +27,7 @@ resource "aws_apigatewayv2_integration" "auth_lambda" {
 # Nota: /auth/login continua disponível no auth-service para login com username/password
 resource "aws_apigatewayv2_route" "auth_cpf" {
   api_id    = data.aws_apigatewayv2_api.oficina_api.id
-  route_key = "POST /auth/cpf"
+  route_key = "POST /${local.environment}/auth/cpf"
   target    = "integrations/${aws_apigatewayv2_integration.auth_lambda.id}"
 }
 

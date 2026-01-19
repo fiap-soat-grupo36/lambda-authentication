@@ -7,6 +7,20 @@ class ValidadorCPFService:
         return ''.join(ch for ch in cpf if ch.isdigit())
 
     @staticmethod
+    def _formatar_cpf(cpf: str) -> str:
+        """
+        Normaliza o CPF para o formato '123.456.789-09'.
+        Se não houver 11 dígitos, retorna o valor original.
+        """
+        if cpf is None:
+            return cpf
+        digits = ''.join(ch for ch in cpf if ch.isdigit())
+        if len(digits) != 11:
+            return cpf
+        return f"{digits[0:3]}.{digits[3:6]}.{digits[6:9]}-{digits[9:11]}"
+
+
+    @staticmethod
     def validar_cpf(cpf: str) -> str:
         cpf = ValidadorCPFService._limpar_cpf(cpf)
 
@@ -21,7 +35,7 @@ class ValidadorCPFService:
                 'CPF inválido: dígitos verificadores incorretos.'
             )
 
-        return cpf
+        return ValidadorCPFService._formatar_cpf(cpf)
 
     @staticmethod
     def _valida_digitos(cpf: str) -> bool:
