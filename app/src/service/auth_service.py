@@ -19,24 +19,24 @@ class AuthService:
         logger.debug('Buscando cliente no banco de dados')
         cliente = ClientRepository.buscar_por_cpf(cpf_limpo)
 
-        if not cliente.ativo:
+        if not cliente['ativo']:
             logger.warning(
-                f'Cliente inativo', extra={'cliente_id': str(cliente.id)}
+                f'Cliente inativo', extra={'cliente_id': str(cliente['id'])}
             )
             raise ClienteInativoError('Cliente está inativo.')
 
         logger.debug(
-            'Gerando token JWT', extra={'cliente_id': str(cliente.id)}
+            'Gerando token JWT', extra={'cliente_id': str(cliente['id'])}
         )
         token = GeradorTokenJWT.gerar_token(
-            cpf=cliente.cpf,
-            cliente_id=str(cliente.id),
-            nome=cliente.nome,
-            ativo=cliente.ativo,
+            cpf=cliente['cpf'],
+            cliente_id=str(cliente['id']),
+            nome=cliente['nome'],
+            ativo=cliente['ativo'],
             expira_em_minutos=expira_em_minutos,
         )
 
         logger.info(
-            'Token gerado com sucesso', extra={'cliente_id': str(cliente.id)}
+            'Token gerado com sucesso', extra={'cliente_id': str(cliente['id'])}
         )
         return {'access_token': token, 'token_type': 'Bearer'}

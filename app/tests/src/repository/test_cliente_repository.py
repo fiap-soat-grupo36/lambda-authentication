@@ -15,18 +15,38 @@ class TestClientRepository:
             mock_session
         )
 
-        cliente_esperado = ClienteModel(
-            id=1, cpf='12345678900', nome='João', ativo=True
-        )
+        # Mock do objeto ClienteModel com método to_dict
+        mock_cliente = MagicMock()
+        mock_cliente.to_dict.return_value = {
+            'id': 1,
+            'cpf': '12345678900',
+            'nome': 'João',
+            'ativo': True,
+            'cnpj': None,
+            'data_cadastro': None,
+            'data_nascimento': None,
+            'email': None,
+            'bairro': None,
+            'cep': None,
+            'cidade': None,
+            'complemento': None,
+            'estado': None,
+            'logradouro': None,
+            'numero': None,
+            'observacao': None,
+            'telefone': None,
+        }
 
         (
             mock_session.query.return_value.filter.return_value.first.return_value
-        ) = cliente_esperado
+        ) = mock_cliente
 
         resultado = ClientRepository.buscar_por_cpf('12345678900')
 
-        assert resultado == cliente_esperado
-        assert resultado.nome == 'João'
+        assert resultado['id'] == 1
+        assert resultado['cpf'] == '12345678900'
+        assert resultado['nome'] == 'João'
+        assert resultado['ativo'] is True
 
     @patch('src.repository.cliente_repository.GerenciadorDB')
     def test_buscar_por_cpf_nao_encontrado(self, mock_db):

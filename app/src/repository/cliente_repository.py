@@ -25,4 +25,4 @@ class ClientRepository:
             logger.debug(
                 'Cliente encontrado', extra={'cliente_id': str(cliente.id)}
             )
-            return cliente
+            return cliente.to_dict()
