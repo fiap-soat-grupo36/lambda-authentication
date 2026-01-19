@@ -19,7 +19,7 @@ class AuthService:
         logger.debug('Buscando cliente no banco de dados')
         cliente = ClientRepository.buscar_por_cpf(cpf_limpo)
 
-        if not cliente.ativo:
+        if not cliente['ativo']:
             logger.warning(
                 f'Cliente inativo', extra={'cliente_id': str(cliente.id)}
             )
