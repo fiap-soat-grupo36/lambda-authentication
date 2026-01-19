@@ -1,9 +1,12 @@
 import json
 import boto3
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy.pool import NullPool
 from contextlib import contextmanager
+
+# Base para os modelos SQLAlchemy
+Base = declarative_base()
 
 
 class GerenciadorDB:
