@@ -11,26 +11,20 @@ from src.service.auth_service import AuthService
 from src.utils.conexao_db import GerenciadorDB
 from src.utils.config import AppConfig, logger
 
-try:
-    GerenciadorDB.inicializar(
-        secret_name=AppConfig.DB_SECRET_NAME,
-        region=AppConfig.AWS_REGION,
-        db_host=AppConfig.DB_HOST,
-        db_port=AppConfig.DB_PORT,
-        db_name=AppConfig.DB_NAME,
-    )
-    logger.info('Database inicializado com sucesso no Cold Start')
-except Exception as e:
-    logger.error(
-        f'Falha na inicialização do DB no Cold Start',
-        exc_info=True,
-        extra={'error': str(e)},
-    )
-
 
 @datadog_lambda_wrapper
 def lambda_handler(event, context):
     try:
+        # Inicializa a conexão com o banco de dados
+        config = AppConfig()
+        GerenciadorDB.inicializar(
+            secret_name=config.db_secret_name,
+            region=config.aws_region,
+            db_host=config.db_host,
+            db_port=config.db_port,
+            db_name=config.db_name
+        )
+        
         logger.info('Lambda invocada', extra={'event': event})
 
         body = json.loads(event.get('body', '{}'))
@@ -67,7 +61,12 @@ def lambda_handler(event, context):
         )
         return _resposta(500, {'erro': 'Erro interno no servidor.'})
     finally:
-        GerenciadorDB.dispose_engine()
+        # Garante que todas as conexões sejam fechadas
+        try:
+            GerenciadorDB.dispose_engine()
+            logger.debug('Conexões com banco de dados fechadas com sucesso')
+        except Exception as e:
+            logger.error('Erro ao fechar conexões com banco', extra={'error': str(e)})
 
 
 def _resposta(status, body):
