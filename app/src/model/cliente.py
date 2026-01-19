@@ -33,8 +33,12 @@ class ClienteModel(Base):
             'ativo': self.ativo,
             'cnpj': self.cnpj,
             'cpf': self.cpf,
-            'data_cadastro': self.data_cadastro.isoformat() if self.data_cadastro else None,
-            'data_nascimento': self.data_nascimento.isoformat() if self.data_nascimento else None,
+            'data_cadastro': self.data_cadastro.isoformat()
+            if self.data_cadastro
+            else None,
+            'data_nascimento': self.data_nascimento.isoformat()
+            if self.data_nascimento
+            else None,
             'email': self.email,
             'bairro': self.bairro,
             'cep': self.cep,

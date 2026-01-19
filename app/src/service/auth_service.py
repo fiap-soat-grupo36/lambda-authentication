@@ -37,6 +37,7 @@ class AuthService:
         )
 
         logger.info(
-            'Token gerado com sucesso', extra={'cliente_id': str(cliente['id'])}
+            'Token gerado com sucesso',
+            extra={'cliente_id': str(cliente['id'])},
         )
         return {'access_token': token, 'token_type': 'Bearer'}

@@ -1,5 +1,7 @@
 import json
 
+from datadog import datadog_lambda_wrapper
+
 from src.exception.validacoes_exception import (
     CPFInvalidoError,
     ClienteNaoEncontradoError,
@@ -8,28 +10,20 @@ from src.exception.validacoes_exception import (
 from src.service.auth_service import AuthService
 from src.utils.conexao_db import GerenciadorDB
 from src.utils.config import AppConfig, logger
-from datadog import datadog_lambda_wrapper
-
-try:
-    GerenciadorDB.inicializar(
-        secret_name=AppConfig.DB_SECRET_NAME,
-        region=AppConfig.AWS_REGION,
-        db_host=AppConfig.DB_HOST,
-        db_port=AppConfig.DB_PORT,
-        db_name=AppConfig.DB_NAME
-    )
-    logger.info('Database inicializado com sucesso no Cold Start')
-except Exception as e:
-    logger.error(
-        f'Falha na inicialização do DB no Cold Start',
-        exc_info=True,
-        extra={'error': str(e)},
-    )
 
 
 @datadog_lambda_wrapper
 def lambda_handler(event, context):
     try:
+        # Inicializa a conexão com o banco de dados
+        GerenciadorDB.inicializar(
+            secret_name=AppConfig.DB_SECRET_NAME,
+            region=AppConfig.AWS_REGION,
+            db_host=AppConfig.DB_HOST,
+            db_port=AppConfig.DB_PORT,
+            db_name=AppConfig.DB_NAME,
+        )
+
         logger.info('Lambda invocada', extra={'event': event})
 
         body = json.loads(event.get('body', '{}'))
@@ -65,6 +59,15 @@ def lambda_handler(event, context):
             'Erro inesperado na lambda', exc_info=True, extra={'error': str(e)}
         )
         return _resposta(500, {'erro': 'Erro interno no servidor.'})
+    finally:
+        # Garante que todas as conexões sejam fechadas
+        try:
+            GerenciadorDB.dispose_engine()
+            logger.debug('Conexões com banco de dados fechadas com sucesso')
+        except Exception as e:
+            logger.error(
+                'Erro ao fechar conexões com banco', extra={'error': str(e)}
+            )
 
 
 def _resposta(status, body):

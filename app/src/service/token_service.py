@@ -3,22 +3,22 @@ from datetime import datetime, timedelta
 from typing import Dict, Any
 
 import jwt
+
 from src.utils.config import logger
 
 
 class GeradorTokenJWT:
-    
     @staticmethod
     def _obter_segredo() -> str:
         """Obtém o secret do JWT da variável de ambiente."""
         segredo = os.environ.get('JWT_SECRET_KEY')
-        
+
         if not segredo:
             logger.error('JWT_SECRET_KEY não configurada')
             raise RuntimeError(
                 "Variável de ambiente 'JWT_SECRET_KEY' não configurada."
             )
-        
+
         return segredo
 
     @staticmethod
@@ -30,7 +30,7 @@ class GeradorTokenJWT:
         expira_em_minutos: int = 30,
     ) -> str:
         """Gera um token JWT com as informações do cliente."""
-        
+
         logger.debug('Obtendo secret para geração do token')
         segredo = GeradorTokenJWT._obter_segredo()
 
@@ -58,11 +58,9 @@ class GeradorTokenJWT:
         return token
 
     @staticmethod
-    def validar_token(
-        token: str, algoritmo: str = 'HS256'
-    ) -> Dict[str, Any]:
+    def validar_token(token: str, algoritmo: str = 'HS256') -> Dict[str, Any]:
         """Valida e decodifica um token JWT."""
-        
+
         logger.debug('Validando token JWT')
         segredo = GeradorTokenJWT._obter_segredo()
 

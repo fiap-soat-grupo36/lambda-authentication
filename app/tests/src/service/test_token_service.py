@@ -1,5 +1,4 @@
-import json
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 import pytest
 
@@ -7,7 +6,6 @@ from src.service.token_service import GeradorTokenJWT
 
 
 class TestGeradorTokenJWT:
-    
     @patch.dict('os.environ', {'JWT_SECRET_KEY': 'test-secret-key'})
     def test_gerar_token_sucesso(self):
         # Executa
@@ -47,7 +45,7 @@ class TestGeradorTokenJWT:
 
     def test_erro_sem_secret_key(self):
         with patch.dict('os.environ', {}, clear=True):
-            with pytest.raises(RuntimeError, match="JWT_SECRET_KEY"):
+            with pytest.raises(RuntimeError, match='JWT_SECRET_KEY'):
                 GeradorTokenJWT.gerar_token(
                     cpf='12345678901',
                     cliente_id='1',
