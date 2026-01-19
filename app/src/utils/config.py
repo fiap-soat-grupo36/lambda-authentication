@@ -9,11 +9,14 @@ class AppConfig:
     DB_HOST = os.environ.get('DB_HOST')  # Endpoint do RDS
     DB_PORT = os.environ.get('DB_PORT', '5432')  # Porta do RDS
     DB_NAME = os.environ.get('DB_NAME')  # Nome do database
-    JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY')  # Secret do JWT direto da variável de ambiente
+    JWT_SECRET_KEY = os.environ.get(
+        'JWT_SECRET_KEY'
+    )  # Secret do JWT direto da variável de ambiente
     AWS_REGION = os.environ.get('AWS_REGION', 'us-east-2')
     ENVIRONMENT = os.environ.get('DD_ENV', 'dev')
-    SERVICE_NAME = os.environ.get('DD_SERVICE', f'fiap-auth-lambda-{ENVIRONMENT}')
-    
+    SERVICE_NAME = os.environ.get(
+        'DD_SERVICE', f'fiap-auth-lambda-{ENVIRONMENT}'
+    )
 
 
 _log_config = DatadogLogConfig(
@@ -28,5 +31,5 @@ def inicializar_aplicacao():
         region=AppConfig.AWS_REGION,
         db_host=AppConfig.DB_HOST,
         db_port=AppConfig.DB_PORT,
-        db_name=AppConfig.DB_NAME
+        db_name=AppConfig.DB_NAME,
     )

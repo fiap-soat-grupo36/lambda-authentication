@@ -1,7 +1,7 @@
 import logging
-import json
-from pythonjsonlogger import jsonlogger
+
 from ddtrace import tracer
+from pythonjsonlogger import jsonlogger
 
 
 class DatadogLogConfig:

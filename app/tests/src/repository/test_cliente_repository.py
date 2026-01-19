@@ -3,7 +3,6 @@ from unittest.mock import patch, MagicMock
 import pytest
 
 from src.exception.validacoes_exception import ClienteNaoEncontradoError
-from src.model.cliente import ClienteModel
 from src.repository.cliente_repository import ClientRepository
 
 

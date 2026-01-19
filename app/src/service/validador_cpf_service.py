@@ -17,8 +17,7 @@ class ValidadorCPFService:
         digits = ''.join(ch for ch in cpf if ch.isdigit())
         if len(digits) != 11:
             return cpf
-        return f"{digits[0:3]}.{digits[3:6]}.{digits[6:9]}-{digits[9:11]}"
-
+        return f'{digits[0:3]}.{digits[3:6]}.{digits[6:9]}-{digits[9:11]}'
 
     @staticmethod
     def validar_cpf(cpf: str) -> str:
