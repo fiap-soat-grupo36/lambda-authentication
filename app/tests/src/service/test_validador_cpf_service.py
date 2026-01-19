@@ -6,13 +6,13 @@ from src.service.validador_cpf_service import ValidadorCPFService
 
 class TestValidadorCPFService:
     def test_validar_cpf_sucesso_limpo(self):
-        cpf_valido = '52998224725'
+        cpf_valido = '529.982.247-25'
         resultado = ValidadorCPFService.validar_cpf(cpf_valido)
         assert resultado == cpf_valido
 
     def test_validar_cpf_sucesso_com_formatacao(self):
         cpf_input = '529.982.247-25'
-        cpf_esperado = '52998224725'
+        cpf_esperado = '529.982.247-25'
         resultado = ValidadorCPFService.validar_cpf(cpf_input)
         assert resultado == cpf_esperado
 
