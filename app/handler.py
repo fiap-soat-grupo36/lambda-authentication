@@ -16,13 +16,12 @@ from src.utils.config import AppConfig, logger
 def lambda_handler(event, context):
     try:
         # Inicializa a conexão com o banco de dados
-        config = AppConfig()
         GerenciadorDB.inicializar(
-            secret_name=config.db_secret_name,
-            region=config.aws_region,
-            db_host=config.db_host,
-            db_port=config.db_port,
-            db_name=config.db_name,
+            secret_name=AppConfig.DB_SECRET_NAME,
+            region=AppConfig.AWS_REGION,
+            db_host=AppConfig.DB_HOST,
+            db_port=AppConfig.DB_PORT,
+            db_name=AppConfig.DB_NAME,
         )
 
         logger.info('Lambda invocada', extra={'event': event})
